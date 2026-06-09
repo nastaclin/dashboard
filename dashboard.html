@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nastaclin — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --verde: #0B6E4F; --verde-medio: #1A9E72; --verde-claro: #D4F0E5;
+  --verde-suave: #F0FAF6; --creme: #FAF8F4; --cinza-escuro: #1C1C1A;
+  --cinza-medio: #6B6B65; --cinza-claro: #E8E6E0;
+  --laranja: #E87040; --azul: #3B6FD4; --vermelho: #D44545; --amarelo: #E8A820;
+  --sombra: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+}
+body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(--cinza-escuro); min-height: 100vh; display: flex; }
+
+/* SIDEBAR */
+.sidebar { width: 220px; min-height: 100vh; background: var(--cinza-escuro); display: flex; flex-direction: column; padding: 28px 0; position: fixed; top: 0; left: 0; z-index: 100; }
+.logo { padding: 0 24px 28px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.logo-nome { font-family: 'DM Serif Display', serif; font-size: 20px; color: white; letter-spacing: -0.3px; }
+.logo-tag { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+.logo-badge { display: inline-block; font-size: 10px; font-weight: 500; background: var(--verde); color: white; padding: 1px 7px; border-radius: 20px; margin-top: 6px; }
+.nav { padding: 20px 0; flex: 1; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 24px; font-size: 14px; color: rgba(255,255,255,0.5); cursor: pointer; transition: all .18s; border-left: 3px solid transparent; }
+.nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
+.nav-item.ativo { color: white; background: rgba(255,255,255,0.08); border-left-color: var(--verde-medio); font-weight: 500; }
+.nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+.sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.08); }
+.admin-nome { font-size: 13px; font-weight: 500; color: white; }
+.admin-cargo { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+.btn-logout { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: rgba(255,255,255,0.3); cursor: pointer; transition: color .15s; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; }
+.btn-logout:hover { color: rgba(255,255,255,0.7); }
+
+/* MAIN */
+.main { margin-left: 220px; flex: 1; padding: 36px 40px; }
+.topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+.topbar-titulo h1 { font-family: 'DM Serif Display', serif; font-size: 26px; letter-spacing: -0.4px; }
+.topbar-titulo p { font-size: 14px; color: var(--cinza-medio); margin-top: 4px; }
+
+/* MÉTRICAS */
+.metricas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+.metrica-card { background: white; border-radius: 14px; padding: 20px 22px; border: 1px solid var(--cinza-claro); box-shadow: var(--sombra); position: relative; overflow: hidden; }
+.metrica-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.metrica-card.verde::before { background: var(--verde-medio); }
+.metrica-card.azul::before { background: var(--azul); }
+.metrica-card.laranja::before { background: var(--laranja); }
+.metrica-card.roxo::before { background: #7B5CF0; }
+.metrica-label { font-size: 11px; color: var(--cinza-medio); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.metrica-valor { font-family: 'DM Serif Display', serif; font-size: 34px; color: var(--cinza-escuro); letter-spacing: -1px; line-height: 1; }
+.metrica-badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; margin-top: 8px; }
+.badge-verde { background: var(--verde-claro); color: var(--verde); }
+.badge-azul { background: #E8EEFE; color: var(--azul); }
+.badge-laranja { background: #FEF0E8; color: var(--laranja); }
+.badge-roxo { background: #F0EDFE; color: #7B5CF0; }
+
+/* GRID */
+.grid-principal { display: grid; grid-template-columns: 1fr 300px; gap: 18px; }
+.lado-direito { display: flex; flex-direction: column; gap: 16px; }
+
+/* CARD */
+.card { background: white; border-radius: 14px; border: 1px solid var(--cinza-claro); box-shadow: var(--sombra); overflow: hidden; }
+.card-header { padding: 18px 22px; border-bottom: 1px solid var(--cinza-claro); display: flex; justify-content: space-between; align-items: center; }
+.card-titulo { font-size: 14px; font-weight: 600; }
+.card-sub { font-size: 12px; color: var(--cinza-medio); margin-top: 2px; }
+
+/* BUSCA */
+.busca-wrap { padding: 14px 22px; border-bottom: 1px solid var(--cinza-claro); }
+.busca-input { width: 100%; padding: 9px 14px; border: 1px solid var(--cinza-claro); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none; background: var(--creme); transition: border-color .15s; }
+.busca-input:focus { border-color: var(--verde-medio); background: white; }
+
+/* TABELA CLIENTES */
+.cliente-row { display: flex; align-items: center; gap: 14px; padding: 14px 22px; border-bottom: 1px solid var(--cinza-claro); cursor: pointer; transition: background .15s; }
+.cliente-row:last-child { border-bottom: none; }
+.cliente-row:hover { background: var(--verde-suave); }
+.cliente-avatar { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: white; flex-shrink: 0; background: var(--verde); }
+.cliente-info { flex: 1; min-width: 0; }
+.cliente-nome { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cliente-sub { font-size: 12px; color: var(--cinza-medio); margin-top: 1px; }
+.plano-pill { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.plano-basico { background: #E8E6E0; color: var(--cinza-medio); }
+.plano-profissional { background: var(--verde-claro); color: var(--verde); }
+.plano-premium { background: #F0EDFE; color: #7B5CF0; }
+.status-ativo { display: inline-block; width: 7px; height: 7px; background: var(--verde-medio); border-radius: 50%; }
+.status-inativo { display: inline-block; width: 7px; height: 7px; background: var(--cinza-claro); border-radius: 50%; }
+
+/* RECEITA */
+.receita-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--cinza-claro); }
+.receita-item:last-child { border-bottom: none; }
+.receita-cor { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.receita-label { font-size: 13px; color: var(--cinza-escuro); flex: 1; }
+.receita-valor { font-size: 13px; font-weight: 600; color: var(--cinza-escuro); }
+.receita-qtd { font-size: 11px; color: var(--cinza-medio); }
+
+/* ATIVIDADE */
+.ativ-item { display: flex; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--cinza-claro); }
+.ativ-item:last-child { border-bottom: none; }
+.ativ-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.ativ-texto { font-size: 13px; color: var(--cinza-escuro); line-height: 1.5; }
+.ativ-tempo { font-size: 11px; color: var(--cinza-medio); margin-top: 2px; }
+
+/* MODAL CLIENTE */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: none; align-items: center; justify-content: center; }
+.overlay.aberto { display: flex; }
+.modal { background: white; border-radius: 18px; padding: 30px; width: 500px; max-width: 92vw; animation: slideUp .2s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+@keyframes slideUp { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+.modal-titulo { font-family: 'DM Serif Display', serif; font-size: 20px; }
+.modal-fechar { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--cinza-claro); background: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--cinza-medio); font-size: 16px; }
+.modal-info { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.modal-campo { background: var(--creme); border-radius: 9px; padding: 12px 14px; }
+.modal-campo-label { font-size: 11px; font-weight: 500; color: var(--cinza-medio); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.modal-campo-valor { font-size: 14px; font-weight: 500; color: var(--cinza-escuro); }
+.modal-acoes { display: flex; gap: 10px; margin-top: 4px; }
+.btn { padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; transition: all .18s; }
+.btn-primario { background: var(--verde); color: white; }
+.btn-primario:hover { background: #0a5c41; }
+.btn-secundario { background: white; color: var(--cinza-escuro); border: 1px solid var(--cinza-claro); }
+.btn-secundario:hover { background: var(--creme); }
+.btn-perigo { background: #FAE0E0; color: var(--vermelho); border: none; }
+.btn-perigo:hover { background: #f5c6c6; }
+.modal-select { width: 100%; padding: 9px 12px; border: 1px solid var(--cinza-claro); border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; background: white; margin-top: 16px; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 28px; right: 28px; background: var(--cinza-escuro); color: white; padding: 13px 18px; border-radius: 10px; font-size: 13px; z-index: 300; transform: translateY(20px); opacity: 0; transition: all .3s; display: flex; align-items: center; gap: 10px; }
+.toast.visivel { transform: translateY(0); opacity: 1; }
+.toast-dot { width: 7px; height: 7px; border-radius: 50%; background: #7DEFC0; flex-shrink: 0; }
+
+/* AUTH */
+.auth-wrap { position: fixed; inset: 0; background: var(--cinza-escuro); display: flex; align-items: center; justify-content: center; z-index: 999; }
+.auth-box { background: white; border-radius: 18px; padding: 36px; width: 380px; max-width: 92vw; }
+.auth-titulo { font-family: 'DM Serif Display', serif; font-size: 24px; margin-bottom: 6px; }
+.auth-sub { font-size: 14px; color: var(--cinza-medio); margin-bottom: 24px; }
+.auth-campo { margin-bottom: 14px; }
+.auth-campo label { display: block; font-size: 11px; font-weight: 500; color: var(--cinza-medio); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+.auth-campo input { width: 100%; padding: 11px 13px; border: 1.5px solid var(--cinza-claro); border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .15s; }
+.auth-campo input:focus { border-color: var(--verde-medio); }
+.auth-btn { width: 100%; padding: 12px; background: var(--cinza-escuro); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 4px; transition: opacity .18s; }
+.auth-btn:hover { opacity: .85; }
+.auth-erro { background: #FAE0E0; color: var(--vermelho); border-radius: 7px; padding: 9px 13px; font-size: 13px; margin-bottom: 14px; display: none; }
+.auth-erro.visivel { display: block; }
+.auth-aviso { background: #FEF3D8; color: #A0680A; border-radius: 7px; padding: 9px 13px; font-size: 13px; margin-bottom: 14px; }
+
+/* SPLASH */
+.splash { position: fixed; inset: 0; background: var(--cinza-escuro); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; transition: opacity .4s; }
+.splash.oculto { opacity: 0; pointer-events: none; }
+.splash-logo { font-family: 'DM Serif Display', serif; font-size: 36px; color: white; margin-bottom: 6px; }
+.splash-sub { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 36px; }
+.splash-spinner { width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--verde-medio); border-radius: 50%; animation: spin .7s linear infinite; }
+
+/* UTILS */
+.loading { padding: 40px; text-align: center; color: var(--cinza-medio); font-size: 14px; }
+.loading-spinner { width: 24px; height: 24px; border: 2px solid var(--cinza-claro); border-top-color: var(--verde-medio); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 12px; }
+.empty { padding: 40px; text-align: center; color: var(--cinza-medio); font-size: 14px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.sec { display: none; }
+.sec.ativa { display: block; }
+
+.cores { --c1:#1A9E72;--c2:#3B6FD4;--c3:#E87040;--c4:#7B5CF0;--c5:#D44598;--c6:#E8A820; }
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 20px; }
+  .metricas { grid-template-columns: repeat(2,1fr); }
+  .grid-principal { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body class="cores">
+
+<!-- SPLASH -->
+<div class="splash" id="splash">
+  <div class="splash-logo">Nastaclin</div>
+  <div class="splash-sub">Painel Administrativo</div>
+  <div class="splash-spinner"></div>
+</div>
+
+<!-- AUTH -->
+<div class="auth-wrap" id="auth-wrap" style="display:none">
+  <div class="auth-box">
+    <div class="auth-titulo">Acesso restrito</div>
+    <div class="auth-sub">Painel exclusivo da equipe Nastaclin</div>
+    <div class="auth-aviso">⚠️ Este painel é exclusivo para administradores da Nastaclin.</div>
+    <div class="auth-erro" id="auth-erro"></div>
+    <div class="auth-campo"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com"></div>
+    <div class="auth-campo"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+    <button class="auth-btn" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-wrap" style="display:none;width:100%">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-nome">Nastaclin</div>
+      <div class="logo-tag">Painel Administrativo</div>
+      <div class="logo-badge">Admin</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item ativo" onclick="irPara('clientes')">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2M16 11a4 4 0 100-8"/></svg>
+        Clientes
+      </div>
+      <div class="nav-item" onclick="irPara('receita')">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Receita
+      </div>
+      <div class="nav-item" onclick="irPara('atividade')">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Atividade
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-nome" id="sb-admin-nome">—</div>
+      <div class="admin-cargo">Administrador</div>
+      <button class="btn-logout" onclick="fazerLogout()">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="13" height="13"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Sair
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- CLIENTES -->
+    <section id="sec-clientes" class="sec ativa">
+      <div class="topbar">
+        <div class="topbar-titulo">
+          <h1>Clientes</h1>
+          <p id="topbar-data">—</p>
+        </div>
+      </div>
+      <div class="metricas">
+        <div class="metrica-card verde">
+          <div class="metrica-label">Clientes ativos</div>
+          <div class="metrica-valor" id="m-ativos">—</div>
+          <span class="metrica-badge badge-verde" id="m-ativos-sub">total</span>
+        </div>
+        <div class="metrica-card azul">
+          <div class="metrica-label">Receita mensal</div>
+          <div class="metrica-valor" id="m-receita">—</div>
+          <span class="metrica-badge badge-azul">recorrente</span>
+        </div>
+        <div class="metrica-card laranja">
+          <div class="metrica-label">Plano mais popular</div>
+          <div class="metrica-valor" id="m-popular" style="font-size:22px;margin-top:4px">—</div>
+          <span class="metrica-badge badge-laranja" id="m-popular-qtd">—</span>
+        </div>
+        <div class="metrica-card roxo">
+          <div class="metrica-label">Novos este mês</div>
+          <div class="metrica-valor" id="m-novos">—</div>
+          <span class="metrica-badge badge-roxo">cadastros</span>
+        </div>
+      </div>
+
+      <div class="grid-principal">
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-titulo">Todos os clientes</div><div class="card-sub">Clique para ver detalhes</div></div>
+          </div>
+          <div class="busca-wrap">
+            <input class="busca-input" type="text" placeholder="Buscar por nome ou responsável..." oninput="filtrarClientes(this.value)">
+          </div>
+          <div id="lista-clientes"><div class="loading"><div class="loading-spinner"></div>Carregando clientes...</div></div>
+        </div>
+
+        <div class="lado-direito">
+          <div class="card">
+            <div class="card-header"><div class="card-titulo">Receita por plano</div></div>
+            <div id="receita-planos"><div class="loading"><div class="loading-spinner"></div></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-titulo">Atividade recente</div></div>
+            <div id="atividade-recente"><div class="loading"><div class="loading-spinner"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RECEITA -->
+    <section id="sec-receita" class="sec">
+      <div class="topbar"><div class="topbar-titulo"><h1>Receita</h1><p>Visão financeira da Nastaclin</p></div></div>
+      <div class="metricas">
+        <div class="metrica-card verde">
+          <div class="metrica-label">MRR (Mensal)</div>
+          <div class="metrica-valor" id="r-mrr">—</div>
+          <span class="metrica-badge badge-verde">recorrente</span>
+        </div>
+        <div class="metrica-card azul">
+          <div class="metrica-label">ARR (Anual)</div>
+          <div class="metrica-valor" id="r-arr" style="font-size:24px;margin-top:6px">—</div>
+          <span class="metrica-badge badge-azul">projeção</span>
+        </div>
+        <div class="metrica-card laranja">
+          <div class="metrica-label">Ticket médio</div>
+          <div class="metrica-valor" id="r-ticket">—</div>
+          <span class="metrica-badge badge-laranja">por cliente</span>
+        </div>
+        <div class="metrica-card roxo">
+          <div class="metrica-label">Margem estimada</div>
+          <div class="metrica-valor" id="r-margem">82%</div>
+          <span class="metrica-badge badge-roxo">após custos</span>
+        </div>
+      </div>
+      <div class="card" style="padding:24px">
+        <div class="card-titulo" style="margin-bottom:20px">Detalhamento por plano</div>
+        <div id="receita-detalhes"><div class="loading"><div class="loading-spinner"></div></div></div>
+      </div>
+    </section>
+
+    <!-- ATIVIDADE -->
+    <section id="sec-atividade" class="sec">
+      <div class="topbar"><div class="topbar-titulo"><h1>Atividade</h1><p>Últimas ações no sistema</p></div></div>
+      <div class="card">
+        <div id="atividade-lista"><div class="loading"><div class="loading-spinner"></div>Carregando...</div></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- MODAL CLIENTE -->
+<div class="overlay" id="modal-cliente" onclick="fecharModalClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-titulo" id="modal-clinica-nome">—</div>
+      <button class="modal-fechar" onclick="fecharModal()">×</button>
+    </div>
+    <div class="modal-info" id="modal-info"></div>
+    <div>
+      <label style="font-size:11px;font-weight:500;color:var(--cinza-medio);text-transform:uppercase;letter-spacing:.05em">Alterar plano</label>
+      <select class="modal-select" id="modal-plano-select" onchange="alterarPlano()">
+        <option value="basico">Básico — R$ 297/mês</option>
+        <option value="profissional">Profissional — R$ 497/mês</option>
+        <option value="premium">Premium — R$ 797/mês</option>
+      </select>
+    </div>
+    <div class="modal-acoes" style="margin-top:16px">
+      <button class="btn btn-secundario" onclick="fecharModal()">Fechar</button>
+      <button class="btn btn-perigo" onclick="desativarCliente()" id="btn-desativar">Desativar cliente</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg"></span></div>
+
+<script>
+const SUPA_URL = 'https://zrkadblxozddreiwruhv.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpya2FkYmx4b3pkZHJlaXdydWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NjA4MjEsImV4cCI6MjA5NjUzNjgyMX0.BQkXr831MlctUk-FhfEYkrgs6Amdpho5yDWcR3BtXok';
+const PRECOS = { basico: 297, profissional: 497, premium: 797 };
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CORES_AVATAR = ['#1A9E72','#3B6FD4','#E87040','#7B5CF0','#D44598','#E8A820'];
+
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
+
+let todosClientes = [];
+let clienteSelecionadoId = null;
+
+// INIT
+async function init() {
+  setTimeout(() => ocultarSplash(), 6000);
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+      await verificarAdmin(session.user);
+    } else {
+      ocultarSplash();
+      document.getElementById('auth-wrap').style.display = 'flex';
+    }
+  } catch(e) {
+    ocultarSplash();
+    document.getElementById('auth-wrap').style.display = 'flex';
+  }
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) await verificarAdmin(session.user);
+    if (event === 'SIGNED_OUT') mostrarLogin();
+  });
+}
+
+async function verificarAdmin(user) {
+  const { data: admin } = await db.from('nastaclin_admins').select('*').eq('user_id', user.id).maybeSingle();
+  if (!admin) {
+    await db.auth.signOut();
+    ocultarSplash();
+    document.getElementById('auth-wrap').style.display = 'flex';
+    document.getElementById('auth-erro').textContent = 'Acesso negado. Você não é administrador da Nastaclin.';
+    document.getElementById('auth-erro').classList.add('visivel');
+    return;
+  }
+  document.getElementById('sb-admin-nome').textContent = admin.nome;
+  document.getElementById('auth-wrap').style.display = 'none';
+  document.getElementById('app-wrap').style.display = 'flex';
+  document.getElementById('topbar-data').textContent = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  ocultarSplash();
+  await carregarTudo();
+}
+
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const erro = document.getElementById('auth-erro');
+  erro.classList.remove('visivel');
+  const { error } = await db.auth.signInWithPassword({ email, password: senha });
+  if (error) { erro.textContent = 'E-mail ou senha incorretos.'; erro.classList.add('visivel'); }
+}
+
+async function fazerLogout() {
+  await db.auth.signOut();
+  mostrarLogin();
+}
+
+function mostrarLogin() {
+  document.getElementById('app-wrap').style.display = 'none';
+  document.getElementById('auth-wrap').style.display = 'flex';
+}
+
+function ocultarSplash() {
+  setTimeout(() => {
+    const s = document.getElementById('splash');
+    if (s) s.classList.add('oculto');
+  }, 300);
+}
+
+// CARREGAR DADOS
+async function carregarTudo() {
+  const { data } = await db.from('clinicas').select('*').order('criado_em', { ascending: false });
+  todosClientes = data || [];
+  renderClientes(todosClientes);
+  calcularMetricas(todosClientes);
+  renderReceitaPlanos(todosClientes);
+  renderAtividade(todosClientes);
+  renderReceitaDetalhes(todosClientes);
+}
+
+function calcularMetricas(lista) {
+  const ativos = lista.filter(c => c.ativo);
+  const mrr = ativos.reduce((acc, c) => acc + (PRECOS[c.plano] || 0), 0);
+  const novos = lista.filter(c => {
+    const d = new Date(c.criado_em);
+    const hoje = new Date();
+    return d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear();
+  }).length;
+
+  // Plano mais popular
+  const contagem = {};
+  ativos.forEach(c => contagem[c.plano] = (contagem[c.plano]||0)+1);
+  const popular = Object.entries(contagem).sort((a,b)=>b[1]-a[1])[0];
+  const popularNomes = { basico:'Básico', profissional:'Profissional', premium:'Premium' };
+
+  document.getElementById('m-ativos').textContent = ativos.length;
+  document.getElementById('m-ativos-sub').textContent = `de ${lista.length} cadastros`;
+  document.getElementById('m-receita').textContent = `R$${mrr.toLocaleString('pt-BR')}`;
+  document.getElementById('m-popular').textContent = popular ? popularNomes[popular[0]] : '—';
+  document.getElementById('m-popular-qtd').textContent = popular ? `${popular[1]} cliente${popular[1]>1?'s':''}` : '—';
+  document.getElementById('m-novos').textContent = novos;
+
+  // Receita section
+  const ticket = ativos.length ? Math.round(mrr/ativos.length) : 0;
+  document.getElementById('r-mrr').textContent = `R$${mrr.toLocaleString('pt-BR')}`;
+  document.getElementById('r-arr').textContent = `R$${(mrr*12).toLocaleString('pt-BR')}`;
+  document.getElementById('r-ticket').textContent = `R$${ticket}`;
+}
+
+function renderClientes(lista) {
+  const el = document.getElementById('lista-clientes');
+  if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum cliente cadastrado ainda</div>'; return; }
+  el.innerHTML = lista.map((c, i) => {
+    const iniciais = (c.nome||'?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
+    const cor = CORES_AVATAR[i % CORES_AVATAR.length];
+    const planoClass = { basico:'plano-basico', profissional:'plano-profissional', premium:'plano-premium' };
+    const planoLabel = { basico:'Básico', profissional:'Profissional', premium:'Premium' };
+    const data = new Date(c.criado_em).toLocaleDateString('pt-BR');
+    return `<div class="cliente-row" onclick="abrirCliente('${c.id}')">
+      <div class="cliente-avatar" style="background:${cor}">${iniciais}</div>
+      <div class="cliente-info">
+        <div class="cliente-nome">${c.nome || 'Sem nome'}</div>
+        <div class="cliente-sub">${c.responsavel || '—'} · ${c.whatsapp || 'Sem WhatsApp'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span class="plano-pill ${planoClass[c.plano]||'plano-basico'}">${planoLabel[c.plano]||c.plano}</span>
+        <span style="font-size:11px;color:var(--cinza-medio)">${data}</span>
+      </div>
+      <div style="margin-left:8px"><div class="${c.ativo!==false?'status-ativo':'status-inativo'}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function filtrarClientes(busca) {
+  const termo = busca.toLowerCase();
+  const filtrado = todosClientes.filter(c =>
+    (c.nome||'').toLowerCase().includes(termo) ||
+    (c.responsavel||'').toLowerCase().includes(termo)
+  );
+  renderClientes(filtrado);
+}
+
+function renderReceitaPlanos(lista) {
+  const el = document.getElementById('receita-planos');
+  const ativos = lista.filter(c => c.ativo !== false);
+  const planos = [
+    { key:'premium', label:'Premium', cor:'#7B5CF0', preco:797 },
+    { key:'profissional', label:'Profissional', cor:'#1A9E72', preco:497 },
+    { key:'basico', label:'Básico', cor:'#6B6B65', preco:297 },
+  ];
+  el.innerHTML = planos.map(p => {
+    const qtd = ativos.filter(c=>c.plano===p.key).length;
+    const total = qtd * p.preco;
+    return `<div class="receita-item">
+      <div class="receita-cor" style="background:${p.cor}"></div>
+      <div class="receita-label">${p.label}</div>
+      <div style="text-align:right">
+        <div class="receita-valor">R$${total.toLocaleString('pt-BR')}</div>
+        <div class="receita-qtd">${qtd} cliente${qtd!==1?'s':''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderReceitaDetalhes(lista) {
+  const el = document.getElementById('receita-detalhes');
+  if (!el) return;
+  const planos = [
+    { key:'premium', label:'Premium', preco:797, cor:'#7B5CF0' },
+    { key:'profissional', label:'Profissional', preco:497, cor:'#1A9E72' },
+    { key:'basico', label:'Básico', preco:297, cor:'#6B6B65' },
+  ];
+  const ativos = lista.filter(c=>c.ativo!==false);
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:14px">
+    <thead><tr style="border-bottom:1px solid var(--cinza-claro)">
+      <th style="text-align:left;padding:8px 0;font-size:11px;color:var(--cinza-medio);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Plano</th>
+      <th style="text-align:center;padding:8px 0;font-size:11px;color:var(--cinza-medio);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Clientes</th>
+      <th style="text-align:right;padding:8px 0;font-size:11px;color:var(--cinza-medio);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Valor unit.</th>
+      <th style="text-align:right;padding:8px 0;font-size:11px;color:var(--cinza-medio);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Total/mês</th>
+    </tr></thead>
+    <tbody>
+    ${planos.map(p => {
+      const qtd = ativos.filter(c=>c.plano===p.key).length;
+      return `<tr style="border-bottom:1px solid var(--cinza-claro)">
+        <td style="padding:12px 0;display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:${p.cor}"></div>${p.label}</td>
+        <td style="text-align:center;padding:12px 0">${qtd}</td>
+        <td style="text-align:right;padding:12px 0">R$${p.preco}</td>
+        <td style="text-align:right;padding:12px 0;font-weight:600;color:var(--verde)">R$${(qtd*p.preco).toLocaleString('pt-BR')}</td>
+      </tr>`;
+    }).join('')}
+    <tr><td colspan="3" style="padding:12px 0;font-weight:600">Total</td>
+    <td style="text-align:right;padding:12px 0;font-weight:600;color:var(--verde);font-size:16px">R$${ativos.reduce((a,c)=>a+(PRECOS[c.plano]||0),0).toLocaleString('pt-BR')}</td></tr>
+    </tbody>
+  </table>`;
+}
+
+function renderAtividade(lista) {
+  const recentes = [...lista].slice(0, 8);
+  const cores = { cancelamento:'#D44545', novo_agendamento:'#1A9E72', sem_resposta:'#E8A820' };
+  const html = recentes.map(c => `
+    <div class="ativ-item">
+      <div class="ativ-dot" style="background:#1A9E72"></div>
+      <div>
+        <div class="ativ-texto">Nova clínica cadastrada: <strong>${c.nome||'Sem nome'}</strong></div>
+        <div class="ativ-tempo">${formatarTempo(c.criado_em)} · Plano ${c.plano}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('atividade-recente').innerHTML = html || '<div class="empty">Sem atividade recente</div>';
+  document.getElementById('atividade-lista').innerHTML = html || '<div class="empty">Sem atividade</div>';
+}
+
+// MODAL CLIENTE
+function abrirCliente(id) {
+  const c = todosClientes.find(x => x.id === id);
+  if (!c) return;
+  clienteSelecionadoId = id;
+  const planoLabel = { basico:'Básico — R$297/mês', profissional:'Profissional — R$497/mês', premium:'Premium — R$797/mês' };
+  document.getElementById('modal-clinica-nome').textContent = c.nome || 'Sem nome';
+  document.getElementById('modal-plano-select').value = c.plano || 'basico';
+  document.getElementById('btn-desativar').textContent = c.ativo !== false ? 'Desativar cliente' : 'Reativar cliente';
+  document.getElementById('modal-info').innerHTML = `
+    <div class="modal-campo"><div class="modal-campo-label">Responsável</div><div class="modal-campo-valor">${c.responsavel||'—'}</div></div>
+    <div class="modal-campo"><div class="modal-campo-label">WhatsApp</div><div class="modal-campo-valor">${c.whatsapp||'—'}</div></div>
+    <div class="modal-campo"><div class="modal-campo-label">E-mail</div><div class="modal-campo-valor" style="font-size:12px">${c.email||'—'}</div></div>
+    <div class="modal-campo"><div class="modal-campo-label">Cadastro</div><div class="modal-campo-valor">${new Date(c.criado_em).toLocaleDateString('pt-BR')}</div></div>
+    <div class="modal-campo"><div class="modal-campo-label">Plano atual</div><div class="modal-campo-valor">${planoLabel[c.plano]||c.plano}</div></div>
+    <div class="modal-campo"><div class="modal-campo-label">Status</div><div class="modal-campo-valor" style="color:${c.ativo!==false?'var(--verde)':'var(--vermelho)'}">${c.ativo!==false?'Ativo':'Inativo'}</div></div>
+  `;
+  document.getElementById('modal-cliente').classList.add('aberto');
+}
+
+async function alterarPlano() {
+  const novoPlano = document.getElementById('modal-plano-select').value;
+  await db.from('clinicas').update({ plano: novoPlano }).eq('id', clienteSelecionadoId);
+  const idx = todosClientes.findIndex(c=>c.id===clienteSelecionadoId);
+  if (idx >= 0) todosClientes[idx].plano = novoPlano;
+  renderClientes(todosClientes);
+  calcularMetricas(todosClientes);
+  renderReceitaPlanos(todosClientes);
+  toast('Plano atualizado ✓');
+}
+
+async function desativarCliente() {
+  const c = todosClientes.find(x=>x.id===clienteSelecionadoId);
+  const novoStatus = c?.ativo !== false ? false : true;
+  await db.from('clinicas').update({ ativo: novoStatus }).eq('id', clienteSelecionadoId);
+  const idx = todosClientes.findIndex(x=>x.id===clienteSelecionadoId);
+  if (idx >= 0) todosClientes[idx].ativo = novoStatus;
+  fecharModal();
+  renderClientes(todosClientes);
+  calcularMetricas(todosClientes);
+  toast(novoStatus ? 'Cliente reativado ✓' : 'Cliente desativado');
+}
+
+function fecharModal() { document.getElementById('modal-cliente').classList.remove('aberto'); }
+function fecharModalClick(e) { if(e.target===document.getElementById('modal-cliente')) fecharModal(); }
+
+// NAV
+function irPara(sec) {
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('ativa'));
+  document.getElementById(`sec-${sec}`).classList.add('ativa');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('ativo'));
+  ['clientes','receita','atividade'].forEach((s,i)=>{
+    if(s===sec) document.querySelectorAll('.nav-item')[i].classList.add('ativo');
+  });
+}
+
+// TOAST
+let toastTimer;
+function toast(msg) {
+  clearTimeout(toastTimer);
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast').classList.add('visivel');
+  toastTimer = setTimeout(()=>document.getElementById('toast').classList.remove('visivel'), 3200);
+}
+
+function formatarTempo(iso) {
+  const diff = Math.floor((Date.now()-new Date(iso))/60000);
+  if (diff<1) return 'Agora mesmo';
+  if (diff<60) return `Há ${diff} min`;
+  const h = Math.floor(diff/60);
+  if (h<24) return `Há ${h}h`;
+  return `Há ${Math.floor(h/24)}d`;
+}
+
+init();
+</script>
+</body>
+</html>
