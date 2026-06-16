@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nastaclin — Dashboard</title>
+<title>NastaDesk — Painel Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -12,19 +12,19 @@
   --verde: #0B6E4F; --verde-medio: #1A9E72; --verde-claro: #D4F0E5;
   --verde-suave: #F0FAF6; --creme: #FAF8F4; --cinza-escuro: #1C1C1A;
   --cinza-medio: #6B6B65; --cinza-claro: #E8E6E0;
-  --laranja: #E87040; --azul: #3B6FD4; --vermelho: #D44545; --amarelo: #E8A820;
+  --laranja: #E87040; --azul: #3B6FD4; --vermelho: #D44545; --amarelo: #E8A820; --roxo: #7B5CF0;
   --sombra: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
 }
 body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(--cinza-escuro); min-height: 100vh; display: flex; }
 
 /* SIDEBAR */
-.sidebar { width: 220px; min-height: 100vh; background: var(--cinza-escuro); display: flex; flex-direction: column; padding: 28px 0; position: fixed; top: 0; left: 0; z-index: 100; }
+.sidebar { width: 230px; min-height: 100vh; background: var(--cinza-escuro); display: flex; flex-direction: column; padding: 28px 0; position: fixed; top: 0; left: 0; z-index: 100; }
 .logo { padding: 0 24px 28px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-.logo-nome { font-family: 'DM Serif Display', serif; font-size: 20px; color: white; letter-spacing: -0.3px; }
+.logo-nome { font-family: 'DM Serif Display', serif; font-size: 21px; color: white; letter-spacing: -0.3px; }
 .logo-tag { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
-.logo-badge { display: inline-block; font-size: 10px; font-weight: 500; background: var(--verde); color: white; padding: 1px 7px; border-radius: 20px; margin-top: 6px; }
+.logo-badge { display: inline-block; font-size: 10px; font-weight: 500; background: var(--verde); color: white; padding: 1px 7px; border-radius: 20px; margin-top: 8px; }
 .nav { padding: 20px 0; flex: 1; }
-.nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 24px; font-size: 14px; color: rgba(255,255,255,0.5); cursor: pointer; transition: all .18s; border-left: 3px solid transparent; }
+.nav-item { display: flex; align-items: center; gap: 11px; padding: 11px 24px; font-size: 14px; color: rgba(255,255,255,0.5); cursor: pointer; transition: all .18s; border-left: 3px solid transparent; }
 .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
 .nav-item.ativo { color: white; background: rgba(255,255,255,0.08); border-left-color: var(--verde-medio); font-weight: 500; }
 .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
@@ -35,100 +35,121 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
 .btn-logout:hover { color: rgba(255,255,255,0.7); }
 
 /* MAIN */
-.main { margin-left: 220px; flex: 1; padding: 36px 40px; }
-.topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+.main { margin-left: 230px; flex: 1; padding: 36px 40px; max-width: 1280px; }
+.topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; gap: 16px; }
 .topbar-titulo h1 { font-family: 'DM Serif Display', serif; font-size: 26px; letter-spacing: -0.4px; }
 .topbar-titulo p { font-size: 14px; color: var(--cinza-medio); margin-top: 4px; }
 
 /* MÉTRICAS */
-.metricas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
-.metrica-card { background: white; border-radius: 14px; padding: 20px 22px; border: 1px solid var(--cinza-claro); box-shadow: var(--sombra); position: relative; overflow: hidden; }
-.metrica-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.metricas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+.metrica-card { background: white; border-radius: 14px; padding: 18px 20px; border: 1px solid var(--cinza-claro); box-shadow: var(--sombra); position: relative; overflow: hidden; }
+.metrica-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--cinza-claro); }
 .metrica-card.verde::before { background: var(--verde-medio); }
 .metrica-card.azul::before { background: var(--azul); }
 .metrica-card.laranja::before { background: var(--laranja); }
-.metrica-card.roxo::before { background: #7B5CF0; }
+.metrica-card.roxo::before { background: var(--roxo); }
 .metrica-label { font-size: 11px; color: var(--cinza-medio); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
-.metrica-valor { font-family: 'DM Serif Display', serif; font-size: 34px; color: var(--cinza-escuro); letter-spacing: -1px; line-height: 1; }
+.metrica-valor { font-family: 'DM Serif Display', serif; font-size: 30px; color: var(--cinza-escuro); letter-spacing: -1px; line-height: 1; }
 .metrica-badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; margin-top: 8px; }
 .badge-verde { background: var(--verde-claro); color: var(--verde); }
 .badge-azul { background: #E8EEFE; color: var(--azul); }
 .badge-laranja { background: #FEF0E8; color: var(--laranja); }
-.badge-roxo { background: #F0EDFE; color: #7B5CF0; }
+.badge-roxo { background: #F0EDFE; color: var(--roxo); }
 
 /* GRID */
-.grid-principal { display: grid; grid-template-columns: 1fr 300px; gap: 18px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 320px; gap: 18px; }
 .lado-direito { display: flex; flex-direction: column; gap: 16px; }
 
 /* CARD */
 .card { background: white; border-radius: 14px; border: 1px solid var(--cinza-claro); box-shadow: var(--sombra); overflow: hidden; }
-.card-header { padding: 18px 22px; border-bottom: 1px solid var(--cinza-claro); display: flex; justify-content: space-between; align-items: center; }
+.card-header { padding: 16px 22px; border-bottom: 1px solid var(--cinza-claro); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .card-titulo { font-size: 14px; font-weight: 600; }
 .card-sub { font-size: 12px; color: var(--cinza-medio); margin-top: 2px; }
+.card-body { padding: 18px 22px; }
 
-/* BUSCA */
+/* BUSCA / FORM */
 .busca-wrap { padding: 14px 22px; border-bottom: 1px solid var(--cinza-claro); }
-.busca-input { width: 100%; padding: 9px 14px; border: 1px solid var(--cinza-claro); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none; background: var(--creme); transition: border-color .15s; }
-.busca-input:focus { border-color: var(--verde-medio); background: white; }
+.busca-input, .form-input, .form-select { width: 100%; padding: 9px 13px; border: 1px solid var(--cinza-claro); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none; background: var(--creme); transition: border-color .15s; color: var(--cinza-escuro); }
+.busca-input:focus, .form-input:focus, .form-select:focus { border-color: var(--verde-medio); background: white; }
 
-/* TABELA CLIENTES */
-.cliente-row { display: flex; align-items: center; gap: 14px; padding: 14px 22px; border-bottom: 1px solid var(--cinza-claro); cursor: pointer; transition: background .15s; }
-.cliente-row:last-child { border-bottom: none; }
-.cliente-row:hover { background: var(--verde-suave); }
-.cliente-avatar { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: white; flex-shrink: 0; background: var(--verde); }
-.cliente-info { flex: 1; min-width: 0; }
-.cliente-nome { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cliente-sub { font-size: 12px; color: var(--cinza-medio); margin-top: 1px; }
-.plano-pill { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
-.plano-basico { background: #E8E6E0; color: var(--cinza-medio); }
-.plano-profissional { background: var(--verde-claro); color: var(--verde); }
-.plano-premium { background: #F0EDFE; color: #7B5CF0; }
-.status-ativo { display: inline-block; width: 7px; height: 7px; background: var(--verde-medio); border-radius: 50%; }
-.status-inativo { display: inline-block; width: 7px; height: 7px; background: var(--cinza-claro); border-radius: 50%; }
+/* TABELA */
+.tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tabela th { text-align: left; padding: 11px 22px; font-size: 11px; color: var(--cinza-medio); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--cinza-claro); background: var(--creme); }
+.tabela td { padding: 13px 22px; border-bottom: 1px solid var(--cinza-claro); vertical-align: middle; }
+.tabela tr:last-child td { border-bottom: none; }
+.tabela tbody tr:hover { background: var(--verde-suave); }
+.td-nome { font-weight: 500; }
+.td-sub { font-size: 11px; color: var(--cinza-medio); margin-top: 1px; }
+.right { text-align: right; }
 
-/* RECEITA */
-.receita-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--cinza-claro); }
-.receita-item:last-child { border-bottom: none; }
-.receita-cor { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.receita-label { font-size: 13px; color: var(--cinza-escuro); flex: 1; }
-.receita-valor { font-size: 13px; font-weight: 600; color: var(--cinza-escuro); }
-.receita-qtd { font-size: 11px; color: var(--cinza-medio); }
+/* PILLS */
+.pill { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.pill-plano-basico { background: #E8E6E0; color: var(--cinza-medio); }
+.pill-plano-profissional { background: var(--verde-claro); color: var(--verde); }
+.pill-plano-premium { background: #F0EDFE; color: var(--roxo); }
+.pill-plano-none { background: transparent; color: var(--cinza-medio); }
+.pill-st-ativa { background: var(--verde-claro); color: var(--verde); }
+.pill-st-cortesia { background: #F0EDFE; color: var(--roxo); }
+.pill-st-sem_plano { background: var(--cinza-claro); color: var(--cinza-medio); }
+.pill-st-suspensa { background: #FAE0E0; color: var(--vermelho); }
+.pill-as-ativa { background: var(--verde-claro); color: var(--verde); }
+.pill-as-pendente { background: #FEF3D8; color: #A0680A; }
+.pill-as-em_atraso { background: #FEF0E8; color: var(--laranja); }
+.pill-as-cancelada { background: #FAE0E0; color: var(--vermelho); }
+.pill-as-none { background: transparent; color: var(--cinza-claro); }
 
-/* ATIVIDADE */
-.ativ-item { display: flex; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--cinza-claro); }
-.ativ-item:last-child { border-bottom: none; }
-.ativ-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
-.ativ-texto { font-size: 13px; color: var(--cinza-escuro); line-height: 1.5; }
-.ativ-tempo { font-size: 11px; color: var(--cinza-medio); margin-top: 2px; }
+/* LISTAS */
+.lista-item { display: flex; align-items: center; gap: 12px; padding: 12px 22px; border-bottom: 1px solid var(--cinza-claro); }
+.lista-item:last-child { border-bottom: none; }
+.lista-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.lista-label { font-size: 13px; flex: 1; min-width: 0; }
+.lista-valor { font-size: 13px; font-weight: 600; }
+.lista-sub { font-size: 11px; color: var(--cinza-medio); }
 
-/* MODAL CLIENTE */
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: none; align-items: center; justify-content: center; }
-.overlay.aberto { display: flex; }
-.modal { background: white; border-radius: 18px; padding: 30px; width: 500px; max-width: 92vw; animation: slideUp .2s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
-@keyframes slideUp { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
-.modal-titulo { font-family: 'DM Serif Display', serif; font-size: 20px; }
-.modal-fechar { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--cinza-claro); background: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--cinza-medio); font-size: 16px; }
-.modal-info { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-.modal-campo { background: var(--creme); border-radius: 9px; padding: 12px 14px; }
-.modal-campo-label { font-size: 11px; font-weight: 500; color: var(--cinza-medio); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
-.modal-campo-valor { font-size: 14px; font-weight: 500; color: var(--cinza-escuro); }
-.modal-acoes { display: flex; gap: 10px; margin-top: 4px; }
-.btn { padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; transition: all .18s; }
+/* BOTÕES */
+.btn { padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; transition: all .16s; }
 .btn-primario { background: var(--verde); color: white; }
 .btn-primario:hover { background: #0a5c41; }
-.btn-secundario { background: white; color: var(--cinza-escuro); border: 1px solid var(--cinza-claro); }
-.btn-secundario:hover { background: var(--creme); }
-.btn-perigo { background: #FAE0E0; color: var(--vermelho); border: none; }
+.btn-primario:disabled { opacity: .5; cursor: default; }
+.btn-perigo { background: #FAE0E0; color: var(--vermelho); }
 .btn-perigo:hover { background: #f5c6c6; }
-.modal-select { width: 100%; padding: 9px 12px; border: 1px solid var(--cinza-claro); border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; background: white; margin-top: 16px; }
+.btn-mini { padding: 6px 11px; font-size: 12px; }
+
+/* SWITCH */
+.switch { position: relative; display: inline-block; width: 40px; height: 23px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background: var(--cinza-claro); transition: .2s; border-radius: 23px; }
+.slider:before { content: ""; position: absolute; height: 17px; width: 17px; left: 3px; bottom: 3px; background: white; transition: .2s; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.switch input:checked + .slider { background: var(--verde-medio); }
+.switch input:checked + .slider:before { transform: translateX(17px); }
+
+/* CUSTOS */
+.custo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.custo-card { background: white; border-radius: 14px; border: 1px solid var(--cinza-claro); box-shadow: var(--sombra); padding: 18px 20px; transition: opacity .2s; }
+.custo-card.off { opacity: .62; }
+.custo-top { display: flex; align-items: center; gap: 12px; }
+.custo-nome { font-size: 15px; font-weight: 600; flex: 1; }
+.custo-valor-atual { font-family: 'DM Serif Display', serif; font-size: 20px; }
+.custo-nota { font-size: 12px; color: var(--cinza-medio); margin: 8px 0 14px; line-height: 1.45; }
+.custo-campo { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.custo-campo label { font-size: 12px; color: var(--cinza-medio); min-width: 92px; }
+.custo-campo .form-input { max-width: 150px; }
+.faixa-row { display: flex; align-items: center; gap: 6px; margin-top: 7px; font-size: 12px; color: var(--cinza-medio); flex-wrap: wrap; }
+.faixa-row.ativa { color: var(--verde); font-weight: 600; }
+.faixa-row .form-input { max-width: 72px; padding: 6px 9px; }
+.tag-modelo { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 6px; background: var(--verde-suave); color: var(--verde); }
+
+/* FORM ROW */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.form-label { display: block; font-size: 11px; font-weight: 500; color: var(--cinza-medio); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
 
 /* TOAST */
-.toast { position: fixed; bottom: 28px; right: 28px; background: var(--cinza-escuro); color: white; padding: 13px 18px; border-radius: 10px; font-size: 13px; z-index: 300; transform: translateY(20px); opacity: 0; transition: all .3s; display: flex; align-items: center; gap: 10px; }
+.toast { position: fixed; bottom: 28px; right: 28px; background: var(--cinza-escuro); color: white; padding: 13px 18px; border-radius: 10px; font-size: 13px; z-index: 300; transform: translateY(20px); opacity: 0; transition: all .3s; display: flex; align-items: center; gap: 10px; max-width: 360px; }
 .toast.visivel { transform: translateY(0); opacity: 1; }
+.toast.erro { background: var(--vermelho); }
 .toast-dot { width: 7px; height: 7px; border-radius: 50%; background: #7DEFC0; flex-shrink: 0; }
 
-/* AUTH */
+/* AUTH / SPLASH */
 .auth-wrap { position: fixed; inset: 0; background: var(--cinza-escuro); display: flex; align-items: center; justify-content: center; z-index: 999; }
 .auth-box { background: white; border-radius: 18px; padding: 36px; width: 380px; max-width: 92vw; }
 .auth-titulo { font-family: 'DM Serif Display', serif; font-size: 24px; margin-bottom: 6px; }
@@ -137,54 +158,48 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
 .auth-campo label { display: block; font-size: 11px; font-weight: 500; color: var(--cinza-medio); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
 .auth-campo input { width: 100%; padding: 11px 13px; border: 1.5px solid var(--cinza-claro); border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .15s; }
 .auth-campo input:focus { border-color: var(--verde-medio); }
-.auth-btn { width: 100%; padding: 12px; background: var(--cinza-escuro); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 4px; transition: opacity .18s; }
+.auth-btn { width: 100%; padding: 12px; background: var(--cinza-escuro); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 4px; }
 .auth-btn:hover { opacity: .85; }
 .auth-erro { background: #FAE0E0; color: var(--vermelho); border-radius: 7px; padding: 9px 13px; font-size: 13px; margin-bottom: 14px; display: none; }
 .auth-erro.visivel { display: block; }
 .auth-aviso { background: #FEF3D8; color: #A0680A; border-radius: 7px; padding: 9px 13px; font-size: 13px; margin-bottom: 14px; }
-
-/* SPLASH */
 .splash { position: fixed; inset: 0; background: var(--cinza-escuro); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; transition: opacity .4s; }
 .splash.oculto { opacity: 0; pointer-events: none; }
 .splash-logo { font-family: 'DM Serif Display', serif; font-size: 36px; color: white; margin-bottom: 6px; }
 .splash-sub { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 36px; }
-.splash-spinner { width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--verde-medio); border-radius: 50%; animation: spin .7s linear infinite; }
-
-/* UTILS */
+.spinner { width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--verde-medio); border-radius: 50%; animation: spin .7s linear infinite; }
 .loading { padding: 40px; text-align: center; color: var(--cinza-medio); font-size: 14px; }
 .loading-spinner { width: 24px; height: 24px; border: 2px solid var(--cinza-claro); border-top-color: var(--verde-medio); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 12px; }
 .empty { padding: 40px; text-align: center; color: var(--cinza-medio); font-size: 14px; }
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
 .sec { display: none; }
 .sec.ativa { display: block; }
+.muted { color: var(--cinza-medio); }
 
-.cores { --c1:#1A9E72;--c2:#3B6FD4;--c3:#E87040;--c4:#7B5CF0;--c5:#D44598;--c6:#E8A820; }
-
-@media (max-width: 900px) {
+@media (max-width: 920px) {
   .sidebar { display: none; }
   .main { margin-left: 0; padding: 20px; }
-  .metricas { grid-template-columns: repeat(2,1fr); }
-  .grid-principal { grid-template-columns: 1fr; }
+  .metricas, .custo-grid { grid-template-columns: repeat(2,1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
 }
 </style>
 </head>
-<body class="cores">
+<body>
 
 <!-- SPLASH -->
 <div class="splash" id="splash">
-  <div class="splash-logo">Nastaclin</div>
+  <div class="splash-logo">NastaDesk</div>
   <div class="splash-sub">Painel Administrativo</div>
-  <div class="splash-spinner"></div>
+  <div class="spinner"></div>
 </div>
 
 <!-- AUTH -->
 <div class="auth-wrap" id="auth-wrap" style="display:none">
   <div class="auth-box">
     <div class="auth-titulo">Acesso restrito</div>
-    <div class="auth-sub">Painel exclusivo da equipe Nastaclin</div>
-    <div class="auth-aviso">⚠️ Este painel é exclusivo para administradores da Nastaclin.</div>
+    <div class="auth-sub">Painel administrativo do NastaDesk</div>
+    <div class="auth-aviso">⚠️ Área exclusiva do administrador.</div>
     <div class="auth-erro" id="auth-erro"></div>
     <div class="auth-campo"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com"></div>
     <div class="auth-campo"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
@@ -196,22 +211,26 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
 <div id="app-wrap" style="display:none;width:100%">
   <aside class="sidebar">
     <div class="logo">
-      <div class="logo-nome">Nastaclin</div>
-      <div class="logo-tag">Painel Administrativo</div>
+      <div class="logo-nome">NastaDesk</div>
+      <div class="logo-tag">Gestão de clínicas</div>
       <div class="logo-badge">Admin</div>
     </div>
     <nav class="nav">
-      <div class="nav-item ativo" onclick="irPara('clientes')">
+      <div class="nav-item ativo" data-sec="visao" onclick="irPara('visao')">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4 13h6V4H4v9zm0 7h6v-5H4v5zm10 0h6v-9h-6v9zm0-16v5h6V4h-6z"/></svg>
+        Visão geral
+      </div>
+      <div class="nav-item" data-sec="clientes" onclick="irPara('clientes')">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2M16 11a4 4 0 100-8"/></svg>
         Clientes
       </div>
-      <div class="nav-item" onclick="irPara('receita')">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        Receita
+      <div class="nav-item" data-sec="assinaturas" onclick="irPara('assinaturas')">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Assinaturas
       </div>
-      <div class="nav-item" onclick="irPara('atividade')">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        Atividade
+      <div class="nav-item" data-sec="custos" onclick="irPara('custos')">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 9v1m0-10c1.11 0 2.08.402 2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Custos
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -226,124 +245,120 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
 
   <main class="main">
 
-    <!-- CLIENTES -->
-    <section id="sec-clientes" class="sec ativa">
-      <div class="topbar">
-        <div class="topbar-titulo">
-          <h1>Clientes</h1>
-          <p id="topbar-data">—</p>
-        </div>
-      </div>
+    <!-- VISÃO GERAL -->
+    <section id="sec-visao" class="sec ativa">
+      <div class="topbar"><div class="topbar-titulo"><h1>Visão geral</h1><p id="topbar-data">—</p></div></div>
       <div class="metricas">
         <div class="metrica-card verde">
           <div class="metrica-label">Clientes ativos</div>
           <div class="metrica-valor" id="m-ativos">—</div>
-          <span class="metrica-badge badge-verde" id="m-ativos-sub">total</span>
+          <span class="metrica-badge badge-verde" id="m-ativos-sub">—</span>
         </div>
         <div class="metrica-card azul">
-          <div class="metrica-label">Receita mensal</div>
-          <div class="metrica-valor" id="m-receita">—</div>
-          <span class="metrica-badge badge-azul">recorrente</span>
+          <div class="metrica-label">Receita mensal (MRR)</div>
+          <div class="metrica-valor" id="m-mrr">—</div>
+          <span class="metrica-badge badge-azul">assinaturas ativas</span>
         </div>
         <div class="metrica-card laranja">
-          <div class="metrica-label">Plano mais popular</div>
-          <div class="metrica-valor" id="m-popular" style="font-size:22px;margin-top:4px">—</div>
-          <span class="metrica-badge badge-laranja" id="m-popular-qtd">—</span>
-        </div>
-        <div class="metrica-card roxo">
-          <div class="metrica-label">Novos este mês</div>
-          <div class="metrica-valor" id="m-novos">—</div>
-          <span class="metrica-badge badge-roxo">cadastros</span>
-        </div>
-      </div>
-
-      <div class="grid-principal">
-        <div class="card">
-          <div class="card-header">
-            <div><div class="card-titulo">Todos os clientes</div><div class="card-sub">Clique para ver detalhes</div></div>
-          </div>
-          <div class="busca-wrap">
-            <input class="busca-input" type="text" placeholder="Buscar por nome ou responsável..." oninput="filtrarClientes(this.value)">
-          </div>
-          <div id="lista-clientes"><div class="loading"><div class="loading-spinner"></div>Carregando clientes...</div></div>
-        </div>
-
-        <div class="lado-direito">
-          <div class="card">
-            <div class="card-header"><div class="card-titulo">Receita por plano</div></div>
-            <div id="receita-planos"><div class="loading"><div class="loading-spinner"></div></div></div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-titulo">Atividade recente</div></div>
-            <div id="atividade-recente"><div class="loading"><div class="loading-spinner"></div></div></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- RECEITA -->
-    <section id="sec-receita" class="sec">
-      <div class="topbar"><div class="topbar-titulo"><h1>Receita</h1><p>Visão financeira da Nastaclin</p></div></div>
-      <div class="metricas">
-        <div class="metrica-card verde">
-          <div class="metrica-label">MRR (Mensal)</div>
-          <div class="metrica-valor" id="r-mrr">—</div>
-          <span class="metrica-badge badge-verde">recorrente</span>
-        </div>
-        <div class="metrica-card azul">
-          <div class="metrica-label">ARR (Anual)</div>
-          <div class="metrica-valor" id="r-arr" style="font-size:24px;margin-top:6px">—</div>
-          <span class="metrica-badge badge-azul">projeção</span>
-        </div>
-        <div class="metrica-card laranja">
-          <div class="metrica-label">Ticket médio</div>
-          <div class="metrica-valor" id="r-ticket">—</div>
-          <span class="metrica-badge badge-laranja">por cliente</span>
+          <div class="metrica-label">Custos mensais</div>
+          <div class="metrica-valor" id="m-custos">—</div>
+          <span class="metrica-badge badge-laranja" id="m-custos-sub">ferramentas</span>
         </div>
         <div class="metrica-card roxo">
           <div class="metrica-label">Margem estimada</div>
-          <div class="metrica-valor" id="r-margem">82%</div>
-          <span class="metrica-badge badge-roxo">após custos</span>
+          <div class="metrica-valor" id="m-margem">—</div>
+          <span class="metrica-badge badge-roxo">receita − custos</span>
         </div>
       </div>
-      <div class="card" style="padding:24px">
-        <div class="card-titulo" style="margin-bottom:20px">Detalhamento por plano</div>
-        <div id="receita-detalhes"><div class="loading"><div class="loading-spinner"></div></div></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div><div class="card-titulo">Receita por plano</div><div class="card-sub">Somente assinaturas ativas</div></div></div>
+          <div id="visao-planos"><div class="loading"><div class="loading-spinner"></div></div></div>
+        </div>
+        <div class="lado-direito">
+          <div class="card">
+            <div class="card-header"><div class="card-titulo">Situação da base</div></div>
+            <div id="visao-base"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-titulo">Últimos cadastros</div></div>
+            <div id="visao-recentes"></div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- ATIVIDADE -->
-    <section id="sec-atividade" class="sec">
-      <div class="topbar"><div class="topbar-titulo"><h1>Atividade</h1><p>Últimas ações no sistema</p></div></div>
+    <!-- CLIENTES -->
+    <section id="sec-clientes" class="sec">
+      <div class="topbar"><div class="topbar-titulo"><h1>Clientes</h1><p>Todas as clínicas, com plano, status, assinatura e receita</p></div></div>
       <div class="card">
-        <div id="atividade-lista"><div class="loading"><div class="loading-spinner"></div>Carregando...</div></div>
+        <div class="busca-wrap">
+          <input class="busca-input" type="text" placeholder="Buscar por clínica ou responsável..." oninput="filtrarClientes(this.value)">
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tabela">
+            <thead><tr>
+              <th>Clínica</th><th>Plano</th><th>Status</th><th>Assinatura</th><th class="right">Receita/mês</th><th class="right">Cadastro</th>
+            </tr></thead>
+            <tbody id="clientes-tbody"><tr><td colspan="6"><div class="loading"><div class="loading-spinner"></div>Carregando...</div></td></tr></tbody>
+          </table>
+        </div>
       </div>
+    </section>
+
+    <!-- ASSINATURAS -->
+    <section id="sec-assinaturas" class="sec">
+      <div class="topbar"><div class="topbar-titulo"><h1>Gestão de assinaturas</h1><p>Conceda cortesia a quem está sem plano ou remova acessos</p></div></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div><div class="card-titulo">Conceder cortesia</div><div class="card-sub">Acesso grátis via admin_conceder_cortesia</div></div></div>
+          <div class="card-body">
+            <div style="margin-bottom:14px">
+              <label class="form-label">Clínica</label>
+              <select class="form-select" id="cc-clinica"></select>
+            </div>
+            <div class="form-row">
+              <div>
+                <label class="form-label">Plano concedido</label>
+                <select class="form-select" id="cc-plano">
+                  <option value="premium">Premium</option>
+                  <option value="profissional">Profissional</option>
+                  <option value="basico">Básica</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Trial (dias)</label>
+                <input class="form-input" id="cc-dias" type="number" min="1" placeholder="ilimitado">
+              </div>
+            </div>
+            <button class="btn btn-primario" style="width:100%" onclick="concederCortesia()">Conceder cortesia</button>
+            <p class="custo-nota" style="margin:12px 0 0">Deixe os dias em branco para acesso por tempo indeterminado. O trial é informativo (define <code>cortesia_expira_em</code>); o porteiro de acesso é <code>ativo</code>.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-titulo">Acessos liberados</div><div class="card-sub">Clínicas que entram no app</div></div></div>
+          <div id="assin-ativos"><div class="loading"><div class="loading-spinner"></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CUSTOS -->
+    <section id="sec-custos" class="sec">
+      <div class="topbar">
+        <div class="topbar-titulo"><h1>Custos</h1><p>Quanto você gasta por mês com o stack, conforme o nº de clientes ativos</p></div>
+        <button class="btn btn-primario" id="btn-salvar-custos" onclick="salvarCustos()">Salvar alterações</button>
+      </div>
+      <div class="metricas">
+        <div class="metrica-card verde"><div class="metrica-label">Clientes ativos</div><div class="metrica-valor" id="c-ativos">—</div><span class="metrica-badge badge-verde">base de cálculo</span></div>
+        <div class="metrica-card azul"><div class="metrica-label">Receita (MRR)</div><div class="metrica-valor" id="c-mrr">—</div><span class="metrica-badge badge-azul">para % de taxas</span></div>
+        <div class="metrica-card laranja"><div class="metrica-label">Custo total/mês</div><div class="metrica-valor" id="c-total">—</div><span class="metrica-badge badge-laranja" id="c-total-sub">ativas</span></div>
+        <div class="metrica-card roxo"><div class="metrica-label">Margem</div><div class="metrica-valor" id="c-margem">—</div><span class="metrica-badge badge-roxo">receita − custos</span></div>
+      </div>
+      <div class="custo-grid" id="custo-grid"><div class="loading"><div class="loading-spinner"></div></div></div>
+      <p class="custo-nota" style="margin-top:16px">Ferramentas <strong>desativadas</strong> (hoje grátis) ficam fora do cálculo — ligue o toggle quando virarem pagas. Todos os valores são editáveis; clique em <strong>Salvar alterações</strong> para persistir.</p>
     </section>
 
   </main>
-</div>
-
-<!-- MODAL CLIENTE -->
-<div class="overlay" id="modal-cliente" onclick="fecharModalClick(event)">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-titulo" id="modal-clinica-nome">—</div>
-      <button class="modal-fechar" onclick="fecharModal()">×</button>
-    </div>
-    <div class="modal-info" id="modal-info"></div>
-    <div>
-      <label style="font-size:11px;font-weight:500;color:var(--cinza-medio);text-transform:uppercase;letter-spacing:.05em">Alterar plano</label>
-      <select class="modal-select" id="modal-plano-select" onchange="alterarPlano()">
-        <option value="basico">Básico — R$ 297/mês</option>
-        <option value="profissional">Profissional — R$ 497/mês</option>
-        <option value="premium">Premium — R$ 797/mês</option>
-      </select>
-    </div>
-    <div class="modal-acoes" style="margin-top:16px">
-      <button class="btn btn-secundario" onclick="fecharModal()">Fechar</button>
-      <button class="btn btn-perigo" onclick="desativarCliente()" id="btn-desativar">Desativar cliente</button>
-    </div>
-  </div>
 </div>
 
 <div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg"></span></div>
@@ -351,53 +366,47 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
 <script>
 const SUPA_URL = 'https://zrkadblxozddreiwruhv.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpya2FkYmx4b3pkZHJlaXdydWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NjA4MjEsImV4cCI6MjA5NjUzNjgyMX0.BQkXr831MlctUk-FhfEYkrgs6Amdpho5yDWcR3BtXok';
-const PRECOS = { basico: 297, profissional: 497, premium: 797 };
-const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const CORES_AVATAR = ['#1A9E72','#3B6FD4','#E87040','#7B5CF0','#D44598','#E8A820'];
+const FN_URL = SUPA_URL + '/functions/v1/admin-api';
+
+const PRECOS = { basico: 97, profissional: 197, premium: 347 };
+const PLANO_LABEL = { basico: 'Básica', profissional: 'Profissional', premium: 'Premium' };
 
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
-let todosClientes = [];
-let clienteSelecionadoId = null;
+let DADOS = { admin: null, clinicas: [], assinaturas: [], custos: null };
+let subsPorClinica = {};
 
-// INIT
+/* ---------- AUTH ---------- */
 async function init() {
-  setTimeout(() => ocultarSplash(), 6000);
+  setTimeout(ocultarSplash, 6000);
   try {
     const { data: { session } } = await db.auth.getSession();
-    if (session) {
-      await verificarAdmin(session.user);
-    } else {
-      ocultarSplash();
-      document.getElementById('auth-wrap').style.display = 'flex';
-    }
-  } catch(e) {
-    ocultarSplash();
-    document.getElementById('auth-wrap').style.display = 'flex';
-  }
-  db.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) await verificarAdmin(session.user);
+    if (session) { await entrar(); } else { mostrarLogin(); }
+  } catch (e) { mostrarLogin(); }
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) entrar();
     if (event === 'SIGNED_OUT') mostrarLogin();
   });
 }
 
-async function verificarAdmin(user) {
-  const { data: admin } = await db.from('nastaclin_admins').select('*').eq('user_id', user.id).maybeSingle();
-  if (!admin) {
-    await db.auth.signOut();
+async function entrar() {
+  try {
+    await carregar();
+    document.getElementById('auth-wrap').style.display = 'none';
+    document.getElementById('app-wrap').style.display = 'flex';
+    document.getElementById('topbar-data').textContent =
+      new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     ocultarSplash();
-    document.getElementById('auth-wrap').style.display = 'flex';
-    document.getElementById('auth-erro').textContent = 'Acesso negado. Você não é administrador da Nastaclin.';
-    document.getElementById('auth-erro').classList.add('visivel');
-    return;
+  } catch (e) {
+    ocultarSplash();
+    if (e.status === 401 || e.status === 403) {
+      await db.auth.signOut();
+      mostrarLogin('Acesso negado. Esta conta não é administradora do NastaDesk.');
+    } else {
+      mostrarLogin('Erro ao carregar o painel: ' + (e.message || e));
+    }
   }
-  document.getElementById('sb-admin-nome').textContent = admin.nome;
-  document.getElementById('auth-wrap').style.display = 'none';
-  document.getElementById('app-wrap').style.display = 'flex';
-  document.getElementById('topbar-data').textContent = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-  ocultarSplash();
-  await carregarTudo();
 }
 
 async function fazerLogin() {
@@ -409,237 +418,308 @@ async function fazerLogin() {
   if (error) { erro.textContent = 'E-mail ou senha incorretos.'; erro.classList.add('visivel'); }
 }
 
-async function fazerLogout() {
-  await db.auth.signOut();
-  mostrarLogin();
-}
+async function fazerLogout() { await db.auth.signOut(); mostrarLogin(); }
 
-function mostrarLogin() {
+function mostrarLogin(msg) {
   document.getElementById('app-wrap').style.display = 'none';
   document.getElementById('auth-wrap').style.display = 'flex';
+  ocultarSplash();
+  const erro = document.getElementById('auth-erro');
+  if (msg) { erro.textContent = msg; erro.classList.add('visivel'); }
+  else { erro.classList.remove('visivel'); }
 }
 
 function ocultarSplash() {
-  setTimeout(() => {
-    const s = document.getElementById('splash');
-    if (s) s.classList.add('oculto');
-  }, 300);
+  setTimeout(() => { const s = document.getElementById('splash'); if (s) s.classList.add('oculto'); }, 250);
 }
 
-// CARREGAR DADOS
-async function carregarTudo() {
-  const { data } = await db.from('clinicas').select('*').order('criado_em', { ascending: false });
-  todosClientes = data || [];
-  renderClientes(todosClientes);
-  calcularMetricas(todosClientes);
-  renderReceitaPlanos(todosClientes);
-  renderAtividade(todosClientes);
-  renderReceitaDetalhes(todosClientes);
-}
-
-function calcularMetricas(lista) {
-  const ativos = lista.filter(c => c.ativo);
-  const mrr = ativos.reduce((acc, c) => acc + (PRECOS[c.plano] || 0), 0);
-  const novos = lista.filter(c => {
-    const d = new Date(c.criado_em);
-    const hoje = new Date();
-    return d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear();
-  }).length;
-
-  // Plano mais popular
-  const contagem = {};
-  ativos.forEach(c => contagem[c.plano] = (contagem[c.plano]||0)+1);
-  const popular = Object.entries(contagem).sort((a,b)=>b[1]-a[1])[0];
-  const popularNomes = { basico:'Básico', profissional:'Profissional', premium:'Premium' };
-
-  document.getElementById('m-ativos').textContent = ativos.length;
-  document.getElementById('m-ativos-sub').textContent = `de ${lista.length} cadastros`;
-  document.getElementById('m-receita').textContent = `R$${mrr.toLocaleString('pt-BR')}`;
-  document.getElementById('m-popular').textContent = popular ? popularNomes[popular[0]] : '—';
-  document.getElementById('m-popular-qtd').textContent = popular ? `${popular[1]} cliente${popular[1]>1?'s':''}` : '—';
-  document.getElementById('m-novos').textContent = novos;
-
-  // Receita section
-  const ticket = ativos.length ? Math.round(mrr/ativos.length) : 0;
-  document.getElementById('r-mrr').textContent = `R$${mrr.toLocaleString('pt-BR')}`;
-  document.getElementById('r-arr').textContent = `R$${(mrr*12).toLocaleString('pt-BR')}`;
-  document.getElementById('r-ticket').textContent = `R$${ticket}`;
-}
-
-function renderClientes(lista) {
-  const el = document.getElementById('lista-clientes');
-  if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum cliente cadastrado ainda</div>'; return; }
-  el.innerHTML = lista.map((c, i) => {
-    const iniciais = (c.nome||'?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
-    const cor = CORES_AVATAR[i % CORES_AVATAR.length];
-    const planoClass = { basico:'plano-basico', profissional:'plano-profissional', premium:'plano-premium' };
-    const planoLabel = { basico:'Básico', profissional:'Profissional', premium:'Premium' };
-    const data = new Date(c.criado_em).toLocaleDateString('pt-BR');
-    return `<div class="cliente-row" onclick="abrirCliente('${c.id}')">
-      <div class="cliente-avatar" style="background:${cor}">${iniciais}</div>
-      <div class="cliente-info">
-        <div class="cliente-nome">${c.nome || 'Sem nome'}</div>
-        <div class="cliente-sub">${c.responsavel || '—'} · ${c.whatsapp || 'Sem WhatsApp'}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-        <span class="plano-pill ${planoClass[c.plano]||'plano-basico'}">${planoLabel[c.plano]||c.plano}</span>
-        <span style="font-size:11px;color:var(--cinza-medio)">${data}</span>
-      </div>
-      <div style="margin-left:8px"><div class="${c.ativo!==false?'status-ativo':'status-inativo'}"></div></div>
-    </div>`;
-  }).join('');
-}
-
-function filtrarClientes(busca) {
-  const termo = busca.toLowerCase();
-  const filtrado = todosClientes.filter(c =>
-    (c.nome||'').toLowerCase().includes(termo) ||
-    (c.responsavel||'').toLowerCase().includes(termo)
-  );
-  renderClientes(filtrado);
-}
-
-function renderReceitaPlanos(lista) {
-  const el = document.getElementById('receita-planos');
-  const ativos = lista.filter(c => c.ativo !== false);
-  const planos = [
-    { key:'premium', label:'Premium', cor:'#7B5CF0', preco:797 },
-    { key:'profissional', label:'Profissional', cor:'#1A9E72', preco:497 },
-    { key:'basico', label:'Básico', cor:'#6B6B65', preco:297 },
-  ];
-  el.innerHTML = planos.map(p => {
-    const qtd = ativos.filter(c=>c.plano===p.key).length;
-    const total = qtd * p.preco;
-    return `<div class="receita-item">
-      <div class="receita-cor" style="background:${p.cor}"></div>
-      <div class="receita-label">${p.label}</div>
-      <div style="text-align:right">
-        <div class="receita-valor">R$${total.toLocaleString('pt-BR')}</div>
-        <div class="receita-qtd">${qtd} cliente${qtd!==1?'s':''}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function renderReceitaDetalhes(lista) {
-  const el = document.getElementById('receita-detalhes');
-  if (!el) return;
-  const planos = [
-    { key:'premium', label:'Premium', preco:797, cor:'#7B5CF0' },
-    { key:'profissional', label:'Profissional', preco:497, cor:'#1A9E72' },
-    { key:'basico', label:'Básico', preco:297, cor:'#6B6B65' },
-  ];
-  const ativos = lista.filter(c=>c.ativo!==false);
-  el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:14px">
-    <thead><tr style="border-bottom:1px solid var(--cinza-claro)">
-      <th style="text-align:left;padding:8px 0;font-size:11px;color:var(--cinza-medio);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Plano</th>
-      <th style="text-align:center;padding:8px 0;font-size:11px;color:var(--cinza-medio);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Clientes</th>
-      <th style="text-align:right;padding:8px 0;font-size:11px;color:var(--cinza-medio);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Valor unit.</th>
-      <th style="text-align:right;padding:8px 0;font-size:11px;color:var(--cinza-medio);font-weight:500;text-transform:uppercase;letter-spacing:.05em">Total/mês</th>
-    </tr></thead>
-    <tbody>
-    ${planos.map(p => {
-      const qtd = ativos.filter(c=>c.plano===p.key).length;
-      return `<tr style="border-bottom:1px solid var(--cinza-claro)">
-        <td style="padding:12px 0;display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:${p.cor}"></div>${p.label}</td>
-        <td style="text-align:center;padding:12px 0">${qtd}</td>
-        <td style="text-align:right;padding:12px 0">R$${p.preco}</td>
-        <td style="text-align:right;padding:12px 0;font-weight:600;color:var(--verde)">R$${(qtd*p.preco).toLocaleString('pt-BR')}</td>
-      </tr>`;
-    }).join('')}
-    <tr><td colspan="3" style="padding:12px 0;font-weight:600">Total</td>
-    <td style="text-align:right;padding:12px 0;font-weight:600;color:var(--verde);font-size:16px">R$${ativos.reduce((a,c)=>a+(PRECOS[c.plano]||0),0).toLocaleString('pt-BR')}</td></tr>
-    </tbody>
-  </table>`;
-}
-
-function renderAtividade(lista) {
-  const recentes = [...lista].slice(0, 8);
-  const cores = { cancelamento:'#D44545', novo_agendamento:'#1A9E72', sem_resposta:'#E8A820' };
-  const html = recentes.map(c => `
-    <div class="ativ-item">
-      <div class="ativ-dot" style="background:#1A9E72"></div>
-      <div>
-        <div class="ativ-texto">Nova clínica cadastrada: <strong>${c.nome||'Sem nome'}</strong></div>
-        <div class="ativ-tempo">${formatarTempo(c.criado_em)} · Plano ${c.plano}</div>
-      </div>
-    </div>`).join('');
-  document.getElementById('atividade-recente').innerHTML = html || '<div class="empty">Sem atividade recente</div>';
-  document.getElementById('atividade-lista').innerHTML = html || '<div class="empty">Sem atividade</div>';
-}
-
-// MODAL CLIENTE
-function abrirCliente(id) {
-  const c = todosClientes.find(x => x.id === id);
-  if (!c) return;
-  clienteSelecionadoId = id;
-  const planoLabel = { basico:'Básico — R$297/mês', profissional:'Profissional — R$497/mês', premium:'Premium — R$797/mês' };
-  document.getElementById('modal-clinica-nome').textContent = c.nome || 'Sem nome';
-  document.getElementById('modal-plano-select').value = c.plano || 'basico';
-  document.getElementById('btn-desativar').textContent = c.ativo !== false ? 'Desativar cliente' : 'Reativar cliente';
-  document.getElementById('modal-info').innerHTML = `
-    <div class="modal-campo"><div class="modal-campo-label">Responsável</div><div class="modal-campo-valor">${c.responsavel||'—'}</div></div>
-    <div class="modal-campo"><div class="modal-campo-label">WhatsApp</div><div class="modal-campo-valor">${c.whatsapp||'—'}</div></div>
-    <div class="modal-campo"><div class="modal-campo-label">E-mail</div><div class="modal-campo-valor" style="font-size:12px">${c.email||'—'}</div></div>
-    <div class="modal-campo"><div class="modal-campo-label">Cadastro</div><div class="modal-campo-valor">${new Date(c.criado_em).toLocaleDateString('pt-BR')}</div></div>
-    <div class="modal-campo"><div class="modal-campo-label">Plano atual</div><div class="modal-campo-valor">${planoLabel[c.plano]||c.plano}</div></div>
-    <div class="modal-campo"><div class="modal-campo-label">Status</div><div class="modal-campo-valor" style="color:${c.ativo!==false?'var(--verde)':'var(--vermelho)'}">${c.ativo!==false?'Ativo':'Inativo'}</div></div>
-  `;
-  document.getElementById('modal-cliente').classList.add('aberto');
-}
-
-async function alterarPlano() {
-  const novoPlano = document.getElementById('modal-plano-select').value;
-  await db.from('clinicas').update({ plano: novoPlano }).eq('id', clienteSelecionadoId);
-  const idx = todosClientes.findIndex(c=>c.id===clienteSelecionadoId);
-  if (idx >= 0) todosClientes[idx].plano = novoPlano;
-  renderClientes(todosClientes);
-  calcularMetricas(todosClientes);
-  renderReceitaPlanos(todosClientes);
-  toast('Plano atualizado ✓');
-}
-
-async function desativarCliente() {
-  const c = todosClientes.find(x=>x.id===clienteSelecionadoId);
-  const novoStatus = c?.ativo !== false ? false : true;
-  await db.from('clinicas').update({ ativo: novoStatus }).eq('id', clienteSelecionadoId);
-  const idx = todosClientes.findIndex(x=>x.id===clienteSelecionadoId);
-  if (idx >= 0) todosClientes[idx].ativo = novoStatus;
-  fecharModal();
-  renderClientes(todosClientes);
-  calcularMetricas(todosClientes);
-  toast(novoStatus ? 'Cliente reativado ✓' : 'Cliente desativado');
-}
-
-function fecharModal() { document.getElementById('modal-cliente').classList.remove('aberto'); }
-function fecharModalClick(e) { if(e.target===document.getElementById('modal-cliente')) fecharModal(); }
-
-// NAV
-function irPara(sec) {
-  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('ativa'));
-  document.getElementById(`sec-${sec}`).classList.add('ativa');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('ativo'));
-  ['clientes','receita','atividade'].forEach((s,i)=>{
-    if(s===sec) document.querySelectorAll('.nav-item')[i].classList.add('ativo');
+/* ---------- API (Edge Function admin) ---------- */
+async function api(action, payload = {}) {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { const e = new Error('no_session'); e.status = 401; throw e; }
+  const r = await fetch(FN_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + session.access_token,
+      'apikey': SUPA_KEY,
+    },
+    body: JSON.stringify({ action, ...payload }),
   });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.error || ('HTTP ' + r.status)); e.status = r.status; throw e; }
+  return j;
 }
 
-// TOAST
+async function carregar() {
+  const d = await api('bootstrap');
+  DADOS = d;
+  DADOS.custos = DADOS.custos || { moeda: 'BRL', ferramentas: [] };
+  document.getElementById('sb-admin-nome').textContent = (d.admin && d.admin.nome) || 'Admin';
+  computar();
+  renderTudo();
+}
+
+/* ---------- DERIVADOS ---------- */
+function computar() {
+  subsPorClinica = {};
+  for (const s of DADOS.assinaturas) {
+    (subsPorClinica[s.clinica_id] = subsPorClinica[s.clinica_id] || []).push(s);
+  }
+}
+
+function statusClinica(c) {
+  const subs = subsPorClinica[c.id] || [];
+  const ativa = subs.find(s => s.status === 'ativa');
+  if (c.cortesia) return { key: 'cortesia', label: 'Cortesia' };
+  if (ativa) return { key: 'ativa', label: 'Ativa' };
+  if (c.ativo) return { key: 'ativa', label: 'Ativa' };
+  if (!c.plano && subs.length === 0) return { key: 'sem_plano', label: 'Sem plano' };
+  return { key: 'suspensa', label: 'Suspensa' };
+}
+
+function subAtiva(c) { return (subsPorClinica[c.id] || []).find(s => s.status === 'ativa') || null; }
+function ultimaSub(c) { const subs = subsPorClinica[c.id] || []; return subs.length ? subs[0] : null; }
+function receitaClinica(c) { const a = subAtiva(c); return a ? Number(a.valor || 0) : 0; }
+
+function metrics() {
+  const clinicas = DADOS.clinicas;
+  const ativos = clinicas.filter(c => c.ativo).length;
+  const cortesias = clinicas.filter(c => c.cortesia).length;
+  let semPlano = 0, pagantes = 0;
+  for (const c of clinicas) {
+    const st = statusClinica(c);
+    if (st.key === 'sem_plano') semPlano++;
+    if (st.key === 'ativa' && !c.cortesia && subAtiva(c)) pagantes++;
+  }
+  const mrr = DADOS.assinaturas.filter(s => s.status === 'ativa').reduce((a, s) => a + Number(s.valor || 0), 0);
+  return { total: clinicas.length, ativos, cortesias, semPlano, pagantes, mrr };
+}
+
+/* ---------- CUSTOS ---------- */
+function custoFerramenta(f, ativos, mrr) {
+  if (!f.ativo) return 0;
+  switch (f.modelo) {
+    case 'fixo': return Number(f.valor) || 0;
+    case 'percentual_receita': return mrr * (Number(f.percentual) || 0) / 100;
+    case 'por_clinica_ativa': return (Number(f.valor) || 0) * ativos;
+    case 'faixas_clinicas': {
+      const faixas = f.faixas || [];
+      for (const fx of faixas) {
+        if (fx.ate === null || fx.ate === undefined) return Number(fx.valor) || 0;
+        if (ativos <= Number(fx.ate)) return Number(fx.valor) || 0;
+      }
+      return faixas.length ? Number(faixas[faixas.length - 1].valor) || 0 : 0;
+    }
+    default: return 0;
+  }
+}
+function custoTotal(ativos, mrr) {
+  return (DADOS.custos.ferramentas || []).reduce((a, f) => a + custoFerramenta(f, ativos, mrr), 0);
+}
+
+/* ---------- FORMAT ---------- */
+function brl(n) { return 'R$ ' + (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+function brl2(n) { return 'R$ ' + (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function planoPill(p) { const cls = p ? ('pill-plano-' + p) : 'pill-plano-none'; return `<span class="pill ${cls}">${p ? (PLANO_LABEL[p] || p) : '—'}</span>`; }
+function escapeHtml(s) { return (s == null ? '' : String(s)).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m])); }
+function dataBR(iso) { return iso ? new Date(iso).toLocaleDateString('pt-BR') : '—'; }
+
+/* ---------- RENDER ---------- */
+function renderTudo() { renderVisao(); renderClientes(); renderAssinaturas(); renderCustos(); }
+
+function renderVisao() {
+  const m = metrics();
+  const ct = custoTotal(m.ativos, m.mrr);
+  const margem = m.mrr - ct;
+  document.getElementById('m-ativos').textContent = m.ativos;
+  document.getElementById('m-ativos-sub').textContent = `de ${m.total} cadastros`;
+  document.getElementById('m-mrr').textContent = brl(m.mrr);
+  document.getElementById('m-custos').textContent = brl(ct);
+  document.getElementById('m-custos-sub').textContent = `${(DADOS.custos.ferramentas || []).filter(f => f.ativo).length} ativas`;
+  const margEl = document.getElementById('m-margem');
+  margEl.textContent = brl(margem);
+  margEl.style.color = margem < 0 ? 'var(--vermelho)' : 'var(--cinza-escuro)';
+
+  const planos = ['premium', 'profissional', 'basico'];
+  const cores = { premium: 'var(--roxo)', profissional: 'var(--verde-medio)', basico: 'var(--cinza-medio)' };
+  const ativasSubs = DADOS.assinaturas.filter(s => s.status === 'ativa');
+  document.getElementById('visao-planos').innerHTML = planos.map(p => {
+    const subs = ativasSubs.filter(s => s.plano === p);
+    const total = subs.reduce((a, s) => a + Number(s.valor || 0), 0);
+    return `<div class="lista-item">
+      <div class="lista-dot" style="background:${cores[p]}"></div>
+      <div class="lista-label">${PLANO_LABEL[p]} <span class="lista-sub">· R$ ${PRECOS[p]}</span></div>
+      <div style="text-align:right"><div class="lista-valor">${brl(total)}</div><div class="lista-sub">${subs.length} assinante${subs.length !== 1 ? 's' : ''}</div></div>
+    </div>`;
+  }).join('') + `<div class="lista-item"><div class="lista-dot" style="background:var(--azul)"></div><div class="lista-label" style="font-weight:600">Total MRR</div><div class="lista-valor">${brl(m.mrr)}</div></div>`;
+
+  const base = [
+    { label: 'Ativas (pagantes)', v: m.pagantes, cor: 'var(--verde-medio)' },
+    { label: 'Cortesias', v: m.cortesias, cor: 'var(--roxo)' },
+    { label: 'Sem plano', v: m.semPlano, cor: 'var(--cinza-medio)' },
+  ];
+  document.getElementById('visao-base').innerHTML = base.map(b =>
+    `<div class="lista-item"><div class="lista-dot" style="background:${b.cor}"></div><div class="lista-label">${b.label}</div><div class="lista-valor">${b.v}</div></div>`
+  ).join('');
+
+  const recentes = DADOS.clinicas.slice(0, 6);
+  document.getElementById('visao-recentes').innerHTML = recentes.length ? recentes.map(c => {
+    const st = statusClinica(c);
+    return `<div class="lista-item">
+      <div class="lista-dot" style="background:var(--verde-medio)"></div>
+      <div class="lista-label"><div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.nome || 'Sem nome')}</div><div class="lista-sub">${dataBR(c.criado_em)}</div></div>
+      <span class="pill pill-st-${st.key}">${st.label}</span>
+    </div>`;
+  }).join('') : '<div class="empty">Sem cadastros</div>';
+}
+
+function renderClientes(busca) {
+  let lista = DADOS.clinicas;
+  if (busca) {
+    const t = busca.toLowerCase();
+    lista = lista.filter(c => (c.nome || '').toLowerCase().includes(t) || (c.responsavel || '').toLowerCase().includes(t));
+  }
+  const tb = document.getElementById('clientes-tbody');
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="6"><div class="empty">Nenhuma clínica encontrada</div></td></tr>'; return; }
+  tb.innerHTML = lista.map(c => {
+    const st = statusClinica(c);
+    const u = ultimaSub(c);
+    const asKey = u ? u.status : 'none';
+    const asLabel = u ? ({ ativa: 'Ativa', pendente: 'Pendente', em_atraso: 'Em atraso', cancelada: 'Cancelada' }[u.status] || u.status) : '—';
+    const rec = receitaClinica(c);
+    return `<tr>
+      <td><div class="td-nome">${escapeHtml(c.nome || 'Sem nome')}</div><div class="td-sub">${escapeHtml(c.responsavel || '—')}${c.whatsapp ? ' · ' + escapeHtml(c.whatsapp) : ''}</div></td>
+      <td>${planoPill(c.plano)}</td>
+      <td><span class="pill pill-st-${st.key}">${st.label}</span>${c.cortesia && c.cortesia_expira_em ? `<div class="td-sub">expira ${dataBR(c.cortesia_expira_em)}</div>` : ''}</td>
+      <td><span class="pill pill-as-${asKey}">${asLabel}</span></td>
+      <td class="right">${rec ? brl(rec) : '<span class="muted">—</span>'}</td>
+      <td class="right muted">${dataBR(c.criado_em)}</td>
+    </tr>`;
+  }).join('');
+}
+function filtrarClientes(v) { renderClientes(v); }
+
+function renderAssinaturas() {
+  const sel = document.getElementById('cc-clinica');
+  const ordenadas = [...DADOS.clinicas].sort((a, b) =>
+    (statusClinica(a).key === 'sem_plano' ? 0 : 1) - (statusClinica(b).key === 'sem_plano' ? 0 : 1)
+  );
+  sel.innerHTML = ordenadas.map(c => `<option value="${c.id}">${escapeHtml(c.nome || 'Sem nome')} — ${statusClinica(c).label}</option>`).join('');
+
+  const liberados = DADOS.clinicas.filter(c => c.ativo);
+  const box = document.getElementById('assin-ativos');
+  if (!liberados.length) { box.innerHTML = '<div class="empty">Nenhuma clínica com acesso liberado</div>'; return; }
+  box.innerHTML = liberados.map(c => {
+    const st = statusClinica(c);
+    const exp = c.cortesia && c.cortesia_expira_em ? ` · expira ${dataBR(c.cortesia_expira_em)}` : '';
+    return `<div class="lista-item">
+      <div class="lista-label"><div style="font-weight:500">${escapeHtml(c.nome || 'Sem nome')}</div><div class="lista-sub">${st.label} · ${PLANO_LABEL[c.plano] || 'sem plano'}${exp}</div></div>
+      <button class="btn btn-perigo btn-mini" onclick="removerAcesso('${c.id}', this)">Remover acesso</button>
+    </div>`;
+  }).join('');
+}
+
+function renderCustos() {
+  const m = metrics();
+  const ct = custoTotal(m.ativos, m.mrr);
+  const margem = m.mrr - ct;
+  document.getElementById('c-ativos').textContent = m.ativos;
+  document.getElementById('c-mrr').textContent = brl(m.mrr);
+  document.getElementById('c-total').textContent = brl(ct);
+  document.getElementById('c-total-sub').textContent = `${m.ativos} clínica${m.ativos !== 1 ? 's' : ''} ativa${m.ativos !== 1 ? 's' : ''}`;
+  const margEl = document.getElementById('c-margem');
+  margEl.textContent = brl(margem);
+  margEl.style.color = margem < 0 ? 'var(--vermelho)' : 'var(--cinza-escuro)';
+
+  const modeloTag = { fixo: 'Fixo', percentual_receita: '% receita', por_clinica_ativa: 'Por clínica', faixas_clinicas: 'Faixas RAM' };
+  document.getElementById('custo-grid').innerHTML = (DADOS.custos.ferramentas || []).map((f, i) => {
+    const custo = custoFerramenta(f, m.ativos, m.mrr);
+    let campos = '';
+    if (f.modelo === 'fixo') {
+      campos = `<div class="custo-campo"><label>R$ / mês</label><input class="form-input" type="number" step="1" value="${f.valor ?? 0}" oninput="setCusto(${i},'valor',this.value)"></div>`;
+    } else if (f.modelo === 'percentual_receita') {
+      campos = `<div class="custo-campo"><label>% sobre receita</label><input class="form-input" type="number" step="0.01" value="${f.percentual ?? 0}" oninput="setCusto(${i},'percentual',this.value)"></div>`;
+    } else if (f.modelo === 'por_clinica_ativa') {
+      campos = `<div class="custo-campo"><label>R$ / clínica</label><input class="form-input" type="number" step="0.01" value="${f.valor ?? 0}" oninput="setCusto(${i},'valor',this.value)"></div>`;
+    } else if (f.modelo === 'faixas_clinicas') {
+      const faixas = f.faixas || [];
+      const ativaIdx = faixas.findIndex(fx => fx.ate === null || fx.ate === undefined || m.ativos <= Number(fx.ate));
+      campos = faixas.map((fx, j) => {
+        const isInf = (fx.ate === null || fx.ate === undefined);
+        const ate = isInf ? `<span style="min-width:54px">acima de</span>` : `<span>até</span><input class="form-input" type="number" value="${fx.ate}" oninput="setFaixa(${i},${j},'ate',this.value)">`;
+        return `<div class="faixa-row${j === ativaIdx ? ' ativa' : ''}">${ate}<span>clín. →</span><span>R$</span><input class="form-input" type="number" value="${fx.valor ?? 0}" oninput="setFaixa(${i},${j},'valor',this.value)">${j === ativaIdx ? '<span>◀ atual</span>' : ''}</div>`;
+      }).join('');
+    }
+    return `<div class="custo-card ${f.ativo ? '' : 'off'}">
+      <div class="custo-top">
+        <label class="switch"><input type="checkbox" ${f.ativo ? 'checked' : ''} onchange="toggleCusto(${i}, this.checked)"><span class="slider"></span></label>
+        <div class="custo-nome">${escapeHtml(f.nome)}</div>
+        <div class="custo-valor-atual">${f.ativo ? brl2(custo) : '<span class="muted" style="font-size:13px">desativado</span>'}</div>
+      </div>
+      <div style="margin:6px 0 0"><span class="tag-modelo">${modeloTag[f.modelo] || f.modelo}</span></div>
+      <div class="custo-nota">${escapeHtml(f.nota || '')}</div>
+      ${campos}
+    </div>`;
+  }).join('');
+}
+
+/* ---------- HANDLERS CUSTOS ---------- */
+function toggleCusto(i, val) { DADOS.custos.ferramentas[i].ativo = val; renderCustos(); renderVisao(); }
+function setCusto(i, campo, val) { DADOS.custos.ferramentas[i][campo] = (val === '' ? 0 : Number(val)); atualizaCustoLeve(); }
+function setFaixa(i, j, campo, val) {
+  DADOS.custos.ferramentas[i].faixas[j][campo] = (val === '' ? (campo === 'ate' ? null : 0) : Number(val));
+  atualizaCustoLeve();
+}
+let custoTimer;
+function atualizaCustoLeve() { clearTimeout(custoTimer); custoTimer = setTimeout(() => { renderCustos(); renderVisao(); }, 400); }
+
+async function salvarCustos() {
+  const btn = document.getElementById('btn-salvar-custos');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try { await api('salvar_custos', { config: DADOS.custos }); toast('Custos salvos ✓'); }
+  catch (e) { toast('Erro ao salvar: ' + (e.message || e), true); }
+  btn.disabled = false; btn.textContent = 'Salvar alterações';
+}
+
+/* ---------- AÇÕES ADMIN ---------- */
+async function concederCortesia() {
+  const clinica_id = document.getElementById('cc-clinica').value;
+  const plano = document.getElementById('cc-plano').value;
+  const diasRaw = document.getElementById('cc-dias').value;
+  const dias = diasRaw === '' ? null : parseInt(diasRaw, 10);
+  if (!clinica_id) { toast('Selecione uma clínica', true); return; }
+  try {
+    await api('conceder_cortesia', { clinica_id, plano, dias });
+    document.getElementById('cc-dias').value = '';
+    await carregar();
+    toast('Cortesia concedida ✓');
+  } catch (e) { toast('Erro: ' + (e.message || e), true); }
+}
+
+async function removerAcesso(clinica_id, btn) {
+  const c = DADOS.clinicas.find(x => x.id === clinica_id);
+  if (!confirm(`Remover o acesso de "${c ? c.nome : 'esta clínica'}"? Ela deixará de entrar no app.`)) return;
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try { await api('remover_acesso', { clinica_id }); await carregar(); toast('Acesso removido'); }
+  catch (e) { toast('Erro: ' + (e.message || e), true); if (btn) { btn.disabled = false; btn.textContent = 'Remover acesso'; } }
+}
+
+/* ---------- NAV / TOAST ---------- */
+function irPara(sec) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('ativa'));
+  document.getElementById('sec-' + sec).classList.add('ativa');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('ativo', n.dataset.sec === sec));
+}
+
 let toastTimer;
-function toast(msg) {
+function toast(msg, erro) {
   clearTimeout(toastTimer);
   document.getElementById('toast-msg').textContent = msg;
-  document.getElementById('toast').classList.add('visivel');
-  toastTimer = setTimeout(()=>document.getElementById('toast').classList.remove('visivel'), 3200);
-}
-
-function formatarTempo(iso) {
-  const diff = Math.floor((Date.now()-new Date(iso))/60000);
-  if (diff<1) return 'Agora mesmo';
-  if (diff<60) return `Há ${diff} min`;
-  const h = Math.floor(diff/60);
-  if (h<24) return `Há ${h}h`;
-  return `Há ${Math.floor(h/24)}d`;
+  const t = document.getElementById('toast');
+  t.classList.toggle('erro', !!erro);
+  t.classList.add('visivel');
+  toastTimer = setTimeout(() => t.classList.remove('visivel'), 3400);
 }
 
 init();
