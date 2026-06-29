@@ -42,6 +42,23 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+// Cotação USD->BRL ao vivo. Fonte: AwesomeAPI (gratuita, sem chave). Tolerante
+// a falhas: se a cotação não vier, devolve null e o painel usa o câmbio manual.
+async function cambioUSDBRL(): Promise<{ valor: number; hora: string; fonte: string } | null> {
+  try {
+    const r = await fetch("https://economia.awesomeapi.com.br/json/last/USD-BRL", {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const bid = Number(j?.USDBRL?.bid);
+    if (!bid || !isFinite(bid)) return null;
+    return { valor: bid, hora: new Date().toISOString(), fonte: "AwesomeAPI" };
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -80,7 +97,7 @@ Deno.serve(async (req: Request) => {
       const [ano, mes] = ymd.split("-");
       const inicioMes = `${ano}-${mes}-01T00:00:00-03:00`;
 
-      const [clinicasRes, assinaturasRes, cfgRes, usoRes] = await Promise.all([
+      const [clinicasRes, assinaturasRes, cfgRes, usoRes, cambioVivo] = await Promise.all([
         admin.from("clinicas")
           .select("id,nome,responsavel,whatsapp,email,plano,ativo,cortesia,cortesia_expira_em,criado_em,user_id")
           .order("criado_em", { ascending: false }),
@@ -91,6 +108,7 @@ Deno.serve(async (req: Request) => {
         admin.from("ia_uso")
           .select("clinica_id,input_tokens,output_tokens,cache_creation_input_tokens,cache_read_input_tokens")
           .gte("criado_em", inicioMes),
+        cambioUSDBRL(),
       ]);
 
       // Agrega o uso de IA do mês por clínica. Se a tabela ainda não existir
@@ -115,7 +133,12 @@ Deno.serve(async (req: Request) => {
           disponivel: !usoRes.error,
           clinicas: Object.values(porClinica),
         },
+        cambio_vivo: cambioVivo,
       });
+    }
+
+    if (action === "cambio") {
+      return json({ cambio_vivo: await cambioUSDBRL() });
     }
 
     if (action === "salvar_custos") {

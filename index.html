@@ -374,7 +374,7 @@ const PLANO_LABEL = { basico: 'Básica', profissional: 'Profissional', premium: 
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
-let DADOS = { admin: null, clinicas: [], assinaturas: [], custos: null, uso_ia: { periodo: '', disponivel: false, clinicas: [] } };
+let DADOS = { admin: null, clinicas: [], assinaturas: [], custos: null, uso_ia: { periodo: '', disponivel: false, clinicas: [] }, cambio_vivo: null };
 let subsPorClinica = {};
 
 /* ---------- AUTH ---------- */
@@ -456,10 +456,33 @@ async function carregar() {
   DADOS = d;
   DADOS.custos = DADOS.custos || { moeda: 'BRL', ferramentas: [] };
   DADOS.uso_ia = DADOS.uso_ia || { periodo: '', disponivel: false, clinicas: [] };
+  DADOS.cambio_vivo = DADOS.cambio_vivo || null;
   normalizarCustos();
   document.getElementById('sb-admin-nome').textContent = (d.admin && d.admin.nome) || 'Admin';
   computar();
   renderTudo();
+  iniciarCambioAoVivo();
+}
+
+// Atualiza a cotação US$->R$ ao vivo a cada 10 min, sem recarregar a página.
+// Pula o ciclo se o admin estiver editando algum campo de custos (evita roubar
+// o foco / atrapalhar a digitação).
+let cambioAoVivoOn = false;
+function iniciarCambioAoVivo() {
+  if (cambioAoVivoOn) return;
+  cambioAoVivoOn = true;
+  setInterval(async () => {
+    const grid = document.getElementById('custo-grid');
+    if (grid && document.activeElement && grid.contains(document.activeElement)) return;
+    try {
+      const d = await api('cambio');
+      if (d && d.cambio_vivo && Number(d.cambio_vivo.valor) > 0) {
+        DADOS.cambio_vivo = d.cambio_vivo;
+        renderCustos();
+        renderVisao();
+      }
+    } catch (_) { /* silencioso: mantém o último câmbio conhecido */ }
+  }, 10 * 60 * 1000);
 }
 
 // Migra config antiga do card "API Claude / Anthropic" (modelo por_clinica_ativa,
@@ -539,11 +562,18 @@ function custoTotal(ativos, mrr) {
 }
 
 /* ---------- CUSTO REAL DA IA (Claude) ---------- */
+// Câmbio US$->R$ ao vivo (vem da admin-api); cai para o valor manual se a
+// cotação ao vivo estiver indisponível.
+function cambioAtual(f) {
+  const cv = DADOS.cambio_vivo;
+  if (cv && Number(cv.valor) > 0) return Number(cv.valor);
+  return Number(f.cambio_brl ?? 5.40);
+}
 // Custo de uma clínica a partir do uso de tokens do mês.
 function custoIAcliente(u, f) {
   const pin = Number(f.preco_input_usd_milhao ?? 1);
   const pout = Number(f.preco_output_usd_milhao ?? 5);
-  const cambio = Number(f.cambio_brl ?? 5.40);
+  const cambio = cambioAtual(f);
   const inTok = Number(u.input_tokens || 0) + Number(u.cache_creation_input_tokens || 0) + Number(u.cache_read_input_tokens || 0);
   const outTok = Number(u.output_tokens || 0);
   const usd = (inTok / 1e6) * pin + (outTok / 1e6) * pout;
@@ -557,7 +587,7 @@ function custoIAreal(f) {
     const c = custoIAcliente(u, f);
     usd += c.usd; inTok += c.inTok; outTok += c.outTok;
   }
-  const cambio = Number(f.cambio_brl ?? 5.40);
+  const cambio = cambioAtual(f);
   return { usd, brl: usd * cambio, inTok, outTok, n: lista.length };
 }
 
@@ -694,10 +724,16 @@ function renderCustos() {
         return `<div class="faixa-row${j === ativaIdx ? ' ativa' : ''}">${ate}<span>clín. →</span><span>R$</span><input class="form-input" type="number" value="${fx.valor ?? 0}" oninput="setFaixa(${i},${j},'valor',this.value)">${j === ativaIdx ? '<span>◀ atual</span>' : ''}</div>`;
       }).join('');
     } else if (f.modelo === 'uso_real_ia') {
+      const cv = DADOS.cambio_vivo;
+      const cambioLinha = (cv && Number(cv.valor) > 0)
+        ? `<div class="custo-campo"><label>Câmbio US$ → R$ (ao vivo)</label><span style="font-weight:600">R$ ${Number(cv.valor).toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</span> <span class="muted" style="font-size:12px">· ${escapeHtml(cv.fonte || 'cotação')}${cv.hora ? ' · ' + new Date(cv.hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}</span></div>`
+        : `<div class="custo-campo"><label>Câmbio US$ → R$</label><span class="muted" style="font-size:12px">cotação ao vivo indisponível — usando o valor manual abaixo</span></div>`;
+      const cambioFallback = `<div class="custo-campo"><label>Câmbio manual (fallback)</label><input class="form-input" type="number" step="0.01" value="${f.cambio_brl ?? 5.40}" oninput="setCusto(${i},'cambio_brl',this.value)"></div>`;
       campos = `
         <div class="custo-campo"><label>US$ / 1M entrada</label><input class="form-input" type="number" step="0.01" value="${f.preco_input_usd_milhao ?? 1}" oninput="setCusto(${i},'preco_input_usd_milhao',this.value)"></div>
         <div class="custo-campo"><label>US$ / 1M saída</label><input class="form-input" type="number" step="0.01" value="${f.preco_output_usd_milhao ?? 5}" oninput="setCusto(${i},'preco_output_usd_milhao',this.value)"></div>
-        <div class="custo-campo"><label>Câmbio US$ → R$</label><input class="form-input" type="number" step="0.01" value="${f.cambio_brl ?? 5.40}" oninput="setCusto(${i},'cambio_brl',this.value)"></div>
+        ${cambioLinha}
+        ${cambioFallback}
         ${breakdownIA(f)}`;
     }
     const ehIA = f.modelo === 'uso_real_ia';
