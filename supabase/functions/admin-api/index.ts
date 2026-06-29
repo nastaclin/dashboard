@@ -31,7 +31,7 @@ const DEFAULT_CUSTOS = {
     { id: "vercel", nome: "Vercel", ativo: false, modelo: "fixo", valor: 108, nota: "Hospedagem do front. Plano Pro ~ US$20/mes. Hoje no Hobby (gratis)." },
     { id: "mercadopago", nome: "Mercado Pago (taxas)", ativo: true, modelo: "percentual_receita", percentual: 4.98, nota: "Taxa de 4,98% sobre cada assinatura recebida." },
     { id: "digitalocean", nome: "Servidor Evolution / WhatsApp", ativo: true, modelo: "faixas_clinicas", faixas: [{ ate: 10, valor: 32 }, { ate: 25, valor: 65 }, { ate: 50, valor: 130 }, { ate: 100, valor: 259 }, { ate: null, valor: 518 }], nota: "DigitalOcean. A RAM cresce com o no de clinicas (US$6=1GB na 1a faixa). Ajuste as faixas conforme escalar." },
-    { id: "claude", nome: "API Claude / Anthropic", ativo: true, modelo: "por_clinica_ativa", valor: 3.0, nota: "Bot de WhatsApp em Haiku 4.5 (US$1/US$5 por 1M tokens). ~R$3/clinica/mes (~200 msgs de IA). E quanto recarregar por clinica ativa." },
+    { id: "claude", nome: "API Claude / Anthropic", ativo: true, modelo: "uso_real_ia", preco_input_usd_milhao: 1.0, preco_output_usd_milhao: 5.0, cambio_brl: 5.40, nota: "Bot de WhatsApp em Haiku 4.5. Custo REAL com base nos tokens consumidos por cada clinica no mes (US$1/1M entrada, US$5/1M saida). Ajuste os precos e o cambio se mudarem." },
   ],
 };
 
@@ -73,7 +73,14 @@ Deno.serve(async (req: Request) => {
     const action = body.action || "bootstrap";
 
     if (action === "bootstrap") {
-      const [clinicasRes, assinaturasRes, cfgRes] = await Promise.all([
+      // Início do mês corrente no fuso de São Paulo (para "gasto do mês").
+      const ymd = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+      }).format(new Date());
+      const [ano, mes] = ymd.split("-");
+      const inicioMes = `${ano}-${mes}-01T00:00:00-03:00`;
+
+      const [clinicasRes, assinaturasRes, cfgRes, usoRes] = await Promise.all([
         admin.from("clinicas")
           .select("id,nome,responsavel,whatsapp,email,plano,ativo,cortesia,cortesia_expira_em,criado_em,user_id")
           .order("criado_em", { ascending: false }),
@@ -81,12 +88,33 @@ Deno.serve(async (req: Request) => {
           .select("id,clinica_id,plano,status,valor,provedor,criado_em,proximo_pagamento,atualizado_em")
           .order("criado_em", { ascending: false }),
         admin.from("admin_config").select("value").eq("key", "custos").maybeSingle(),
+        admin.from("ia_uso")
+          .select("clinica_id,input_tokens,output_tokens,cache_creation_input_tokens,cache_read_input_tokens")
+          .gte("criado_em", inicioMes),
       ]);
+
+      // Agrega o uso de IA do mês por clínica. Se a tabela ainda não existir
+      // (migração não aplicada), usoRes.error vem preenchido — devolvemos vazio.
+      const porClinica: Record<string, { clinica_id: string; input_tokens: number; output_tokens: number; cache_creation_input_tokens: number; cache_read_input_tokens: number }> = {};
+      for (const r of (usoRes.data || [])) {
+        const k = r.clinica_id as string;
+        const acc = porClinica[k] || (porClinica[k] = { clinica_id: k, input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 });
+        acc.input_tokens += Number(r.input_tokens || 0);
+        acc.output_tokens += Number(r.output_tokens || 0);
+        acc.cache_creation_input_tokens += Number(r.cache_creation_input_tokens || 0);
+        acc.cache_read_input_tokens += Number(r.cache_read_input_tokens || 0);
+      }
+
       return json({
         admin: { nome: adminRow?.nome || user.email },
         clinicas: clinicasRes.data || [],
         assinaturas: assinaturasRes.data || [],
         custos: cfgRes.data?.value || DEFAULT_CUSTOS,
+        uso_ia: {
+          periodo: `${ano}-${mes}`,
+          disponivel: !usoRes.error,
+          clinicas: Object.values(porClinica),
+        },
       });
     }
 

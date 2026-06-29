@@ -44,7 +44,21 @@ Cada ferramenta tem um modelo de cálculo, todos editáveis no painel:
 | Vercel | fixo (desativado) | plano Pro quando virar pago |
 | Mercado Pago | % da receita | 4,98% por assinatura recebida |
 | Servidor Evolution/WhatsApp | faixas por nº de clínicas | DigitalOcean, RAM cresce com a base |
-| API Claude/Anthropic | por clínica ativa | bot WhatsApp em Haiku 4.5 (~R$3/clínica/mês) |
+| API Claude/Anthropic | **uso real por clínica** | custo calculado a partir dos tokens consumidos no mês (Haiku 4.5: US$1/1M entrada, US$5/1M saída), convertido para R$ |
 
 Os parâmetros ficam em `public.admin_config` (chave `custos`) e são lidos/gravados
 pela Edge Function. Ajuste os números pelo painel quando quiser.
+
+### Custo real da API Claude por cliente
+
+O card **API Claude/Anthropic** não usa mais uma estimativa fixa por clínica. Ele
+mostra o **gasto real**: quantos tokens cada clínica consumiu no chatbot do WhatsApp
+no mês corrente e o custo correspondente em R$ e US$.
+
+- O consumo é registrado na tabela `public.ia_uso` (projeto NastaDesk), gravada pela
+  Edge Function `whatsapp-webhook` a cada chamada ao Claude. O registro é tolerante a
+  falhas — se a gravação falhar, o bot continua respondendo normalmente.
+- A `admin-api` agrega o uso do mês por clínica no `bootstrap` (campo `uso_ia`).
+- Preços (US$/1M entrada e saída) e câmbio US$→R$ são editáveis no painel.
+- **Não há histórico anterior ao deploy**: o gasto só passa a ser medido a partir do
+  momento em que o rastreio entra no ar. Antes disso o card mostra R$ 0 com um aviso.

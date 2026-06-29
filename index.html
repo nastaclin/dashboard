@@ -374,7 +374,7 @@ const PLANO_LABEL = { basico: 'Básica', profissional: 'Profissional', premium: 
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
-let DADOS = { admin: null, clinicas: [], assinaturas: [], custos: null };
+let DADOS = { admin: null, clinicas: [], assinaturas: [], custos: null, uso_ia: { periodo: '', disponivel: false, clinicas: [] } };
 let subsPorClinica = {};
 
 /* ---------- AUTH ---------- */
@@ -455,9 +455,28 @@ async function carregar() {
   const d = await api('bootstrap');
   DADOS = d;
   DADOS.custos = DADOS.custos || { moeda: 'BRL', ferramentas: [] };
+  DADOS.uso_ia = DADOS.uso_ia || { periodo: '', disponivel: false, clinicas: [] };
+  normalizarCustos();
   document.getElementById('sb-admin-nome').textContent = (d.admin && d.admin.nome) || 'Admin';
   computar();
   renderTudo();
+}
+
+// Migra config antiga do card "API Claude / Anthropic" (modelo por_clinica_ativa,
+// uma estimativa fixa) para o novo modelo de uso real. Roda em memória; só é
+// persistido quando o admin clicar em "Salvar alterações".
+function normalizarCustos() {
+  const fer = (DADOS.custos && DADOS.custos.ferramentas) || [];
+  const claude = fer.find(f => f.id === 'claude');
+  if (claude && claude.modelo !== 'uso_real_ia') {
+    claude.modelo = 'uso_real_ia';
+    claude.nota = 'Bot de WhatsApp em Haiku 4.5. Custo REAL com base nos tokens consumidos por cada clínica no mês (US$1/1M entrada, US$5/1M saída). Ajuste os preços e o câmbio se mudarem.';
+  }
+  if (claude) {
+    claude.preco_input_usd_milhao = claude.preco_input_usd_milhao ?? 1.0;
+    claude.preco_output_usd_milhao = claude.preco_output_usd_milhao ?? 5.0;
+    claude.cambio_brl = claude.cambio_brl ?? 5.40;
+  }
 }
 
 /* ---------- DERIVADOS ---------- */
@@ -511,11 +530,35 @@ function custoFerramenta(f, ativos, mrr) {
       }
       return faixas.length ? Number(faixas[faixas.length - 1].valor) || 0 : 0;
     }
+    case 'uso_real_ia': return custoIAreal(f).brl;
     default: return 0;
   }
 }
 function custoTotal(ativos, mrr) {
   return (DADOS.custos.ferramentas || []).reduce((a, f) => a + custoFerramenta(f, ativos, mrr), 0);
+}
+
+/* ---------- CUSTO REAL DA IA (Claude) ---------- */
+// Custo de uma clínica a partir do uso de tokens do mês.
+function custoIAcliente(u, f) {
+  const pin = Number(f.preco_input_usd_milhao ?? 1);
+  const pout = Number(f.preco_output_usd_milhao ?? 5);
+  const cambio = Number(f.cambio_brl ?? 5.40);
+  const inTok = Number(u.input_tokens || 0) + Number(u.cache_creation_input_tokens || 0) + Number(u.cache_read_input_tokens || 0);
+  const outTok = Number(u.output_tokens || 0);
+  const usd = (inTok / 1e6) * pin + (outTok / 1e6) * pout;
+  return { usd, brl: usd * cambio, inTok, outTok };
+}
+// Custo total da ferramenta Claude no mês (soma de todas as clínicas).
+function custoIAreal(f) {
+  const lista = (DADOS.uso_ia && DADOS.uso_ia.clinicas) || [];
+  let usd = 0, inTok = 0, outTok = 0;
+  for (const u of lista) {
+    const c = custoIAcliente(u, f);
+    usd += c.usd; inTok += c.inTok; outTok += c.outTok;
+  }
+  const cambio = Number(f.cambio_brl ?? 5.40);
+  return { usd, brl: usd * cambio, inTok, outTok, n: lista.length };
 }
 
 /* ---------- FORMAT ---------- */
@@ -632,7 +675,7 @@ function renderCustos() {
   margEl.textContent = brl(margem);
   margEl.style.color = margem < 0 ? 'var(--vermelho)' : 'var(--cinza-escuro)';
 
-  const modeloTag = { fixo: 'Fixo', percentual_receita: '% receita', por_clinica_ativa: 'Por clínica', faixas_clinicas: 'Faixas RAM' };
+  const modeloTag = { fixo: 'Fixo', percentual_receita: '% receita', por_clinica_ativa: 'Por clínica', faixas_clinicas: 'Faixas RAM', uso_real_ia: 'Uso real' };
   document.getElementById('custo-grid').innerHTML = (DADOS.custos.ferramentas || []).map((f, i) => {
     const custo = custoFerramenta(f, m.ativos, m.mrr);
     let campos = '';
@@ -650,18 +693,67 @@ function renderCustos() {
         const ate = isInf ? `<span style="min-width:54px">acima de</span>` : `<span>até</span><input class="form-input" type="number" value="${fx.ate}" oninput="setFaixa(${i},${j},'ate',this.value)">`;
         return `<div class="faixa-row${j === ativaIdx ? ' ativa' : ''}">${ate}<span>clín. →</span><span>R$</span><input class="form-input" type="number" value="${fx.valor ?? 0}" oninput="setFaixa(${i},${j},'valor',this.value)">${j === ativaIdx ? '<span>◀ atual</span>' : ''}</div>`;
       }).join('');
+    } else if (f.modelo === 'uso_real_ia') {
+      campos = `
+        <div class="custo-campo"><label>US$ / 1M entrada</label><input class="form-input" type="number" step="0.01" value="${f.preco_input_usd_milhao ?? 1}" oninput="setCusto(${i},'preco_input_usd_milhao',this.value)"></div>
+        <div class="custo-campo"><label>US$ / 1M saída</label><input class="form-input" type="number" step="0.01" value="${f.preco_output_usd_milhao ?? 5}" oninput="setCusto(${i},'preco_output_usd_milhao',this.value)"></div>
+        <div class="custo-campo"><label>Câmbio US$ → R$</label><input class="form-input" type="number" step="0.01" value="${f.cambio_brl ?? 5.40}" oninput="setCusto(${i},'cambio_brl',this.value)"></div>
+        ${breakdownIA(f)}`;
     }
-    return `<div class="custo-card ${f.ativo ? '' : 'off'}">
+    const ehIA = f.modelo === 'uso_real_ia';
+    const valorAtual = ehIA && f.ativo
+      ? `${brl2(custo)} <span class="muted" style="font-size:12px">(US$ ${custoIAreal(f).usd.toFixed(2)})</span>`
+      : (f.ativo ? brl2(custo) : '<span class="muted" style="font-size:13px">desativado</span>');
+    return `<div class="custo-card ${f.ativo ? '' : 'off'}"${ehIA ? ' style="grid-column:1/-1"' : ''}>
       <div class="custo-top">
         <label class="switch"><input type="checkbox" ${f.ativo ? 'checked' : ''} onchange="toggleCusto(${i}, this.checked)"><span class="slider"></span></label>
         <div class="custo-nome">${escapeHtml(f.nome)}</div>
-        <div class="custo-valor-atual">${f.ativo ? brl2(custo) : '<span class="muted" style="font-size:13px">desativado</span>'}</div>
+        <div class="custo-valor-atual">${valorAtual}</div>
       </div>
       <div style="margin:6px 0 0"><span class="tag-modelo">${modeloTag[f.modelo] || f.modelo}</span></div>
       <div class="custo-nota">${escapeHtml(f.nota || '')}</div>
       ${campos}
     </div>`;
   }).join('');
+}
+
+// Tabela de uso real por clínica (mês corrente).
+function breakdownIA(f) {
+  const periodo = (DADOS.uso_ia && DADOS.uso_ia.periodo) || '';
+  const lista = (DADOS.uso_ia && DADOS.uso_ia.clinicas) || [];
+  const nomePorId = {};
+  for (const c of DADOS.clinicas) nomePorId[c.id] = c.nome || 'Sem nome';
+
+  const linhas = lista
+    .map(u => ({ ...u, calc: custoIAcliente(u, f), nome: nomePorId[u.clinica_id] || u.clinica_id }))
+    .sort((a, b) => b.calc.brl - a.calc.brl);
+
+  const fmtTok = n => (Number(n) || 0).toLocaleString('pt-BR');
+
+  if (!DADOS.uso_ia || DADOS.uso_ia.disponivel === false) {
+    return `<p class="custo-nota" style="margin-top:12px">⏳ O rastreio de uso real ainda não está ativo (a tabela <code>ia_uso</code> precisa ser criada e o chatbot atualizado). Assim que o deploy for feito, o gasto real por cliente passa a aparecer aqui — não há histórico anterior.</p>`;
+  }
+  if (!linhas.length) {
+    return `<p class="custo-nota" style="margin-top:12px">Sem consumo de IA registrado em <strong>${escapeHtml(periodo)}</strong> ainda. O gasto começa a contar a partir do primeiro atendimento do chatbot após o deploy.</p>`;
+  }
+
+  const rows = linhas.map(l => `<tr>
+    <td>${escapeHtml(l.nome)}</td>
+    <td class="right muted">${fmtTok(l.calc.inTok)}</td>
+    <td class="right muted">${fmtTok(l.calc.outTok)}</td>
+    <td class="right muted">US$ ${l.calc.usd.toFixed(2)}</td>
+    <td class="right" style="font-weight:600">${brl2(l.calc.brl)}</td>
+  </tr>`).join('');
+
+  return `<div style="margin-top:14px;overflow-x:auto">
+    <table class="tabela" style="width:100%">
+      <thead><tr>
+        <th>Cliente</th><th class="right">Tokens entrada</th><th class="right">Tokens saída</th><th class="right">US$ (mês)</th><th class="right">R$ (mês)</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="custo-nota" style="margin-top:8px">Consumo de <strong>${escapeHtml(periodo)}</strong> (mês corrente). Tokens de cache, quando houver, entram como tokens de entrada.</p>
+  </div>`;
 }
 
 /* ---------- HANDLERS CUSTOS ---------- */
