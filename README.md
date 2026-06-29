@@ -60,7 +60,8 @@ no mês corrente e o custo correspondente em R$ e US$.
   falhas — se a gravação falhar, o bot continua respondendo normalmente.
 - A `admin-api` agrega o uso do mês por clínica no `bootstrap` (campo `uso_ia`).
 - Os preços (US$/1M entrada e saída) são editáveis no painel.
-- O câmbio US$→R$ é buscado **ao vivo** pela `admin-api` (AwesomeAPI, sem chave) e
-  atualizado a cada 10 min no painel; se a cotação falhar, usa o câmbio manual de fallback.
+- O câmbio US$→R$ é buscado **ao vivo** pela `admin-api` em fontes gratuitas em
+  cascata (AwesomeAPI → open.er-api → Frankfurter, sem chave), com cache de 10 min,
+  e o painel atualiza a cada 10 min; se todas falharem, usa o câmbio manual de fallback.
 - **Não há histórico anterior ao deploy**: o gasto só passa a ser medido a partir do
   momento em que o rastreio entra no ar. Antes disso o card mostra R$ 0 com um aviso.

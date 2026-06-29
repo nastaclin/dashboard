@@ -42,21 +42,55 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-// Cotação USD->BRL ao vivo. Fonte: AwesomeAPI (gratuita, sem chave). Tolerante
-// a falhas: se a cotação não vier, devolve null e o painel usa o câmbio manual.
-async function cambioUSDBRL(): Promise<{ valor: number; hora: string; fonte: string } | null> {
+// Cotação USD->BRL ao vivo. Várias fontes gratuitas (sem chave) em cascata, para
+// ser resiliente a indisponibilidade / limite de uma delas. Em memória cacheia o
+// último valor por 10 min (reduz chamadas externas e sobrevive a um 429
+// pontual). Se nada vier, devolve null e o painel usa o câmbio manual.
+type Cambio = { valor: number; hora: string; fonte: string };
+let _cambioCache: { dado: Cambio; ts: number } | null = null;
+const CAMBIO_TTL_MS = 10 * 60 * 1000;
+
+async function buscarUSDBRL(): Promise<Cambio | null> {
+  // 1) AwesomeAPI (cotação intradiária)
   try {
-    const r = await fetch("https://economia.awesomeapi.com.br/json/last/USD-BRL", {
-      signal: AbortSignal.timeout(4000),
-    });
-    if (!r.ok) return null;
-    const j = await r.json();
-    const bid = Number(j?.USDBRL?.bid);
-    if (!bid || !isFinite(bid)) return null;
-    return { valor: bid, hora: new Date().toISOString(), fonte: "AwesomeAPI" };
-  } catch {
-    return null;
+    const r = await fetch("https://economia.awesomeapi.com.br/json/last/USD-BRL", { signal: AbortSignal.timeout(4000) });
+    if (r.ok) {
+      const j = await r.json();
+      const bid = Number(j?.USDBRL?.bid);
+      if (bid && isFinite(bid)) return { valor: bid, hora: new Date().toISOString(), fonte: "AwesomeAPI" };
+    }
+  } catch { /* tenta a próxima fonte */ }
+  // 2) open.er-api.com (atualização frequente)
+  try {
+    const r = await fetch("https://open.er-api.com/v6/latest/USD", { signal: AbortSignal.timeout(4000) });
+    if (r.ok) {
+      const j = await r.json();
+      const brl = Number(j?.rates?.BRL);
+      if (brl && isFinite(brl)) return { valor: brl, hora: new Date().toISOString(), fonte: "ER-API" };
+    }
+  } catch { /* tenta a próxima fonte */ }
+  // 3) Frankfurter (BCE, diária) — último recurso
+  try {
+    const r = await fetch("https://api.frankfurter.dev/v1/latest?base=USD&symbols=BRL", { signal: AbortSignal.timeout(4000) });
+    if (r.ok) {
+      const j = await r.json();
+      const brl = Number(j?.rates?.BRL);
+      if (brl && isFinite(brl)) return { valor: brl, hora: new Date().toISOString(), fonte: "Frankfurter" };
+    }
+  } catch { /* sem fonte disponível */ }
+  return null;
+}
+
+async function cambioUSDBRL(): Promise<Cambio | null> {
+  const agora = Date.now();
+  if (_cambioCache && (agora - _cambioCache.ts) < CAMBIO_TTL_MS) return _cambioCache.dado;
+  const dado = await buscarUSDBRL();
+  if (dado) {
+    _cambioCache = { dado, ts: agora };
+    return dado;
   }
+  // Falhou agora: devolve o último valor conhecido (se houver) em vez de nada.
+  return _cambioCache ? _cambioCache.dado : null;
 }
 
 Deno.serve(async (req: Request) => {
