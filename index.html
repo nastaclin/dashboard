@@ -505,6 +505,29 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
           <p class="custo-nota" style="margin:12px 0 0">O número entra no botão "Quero meu site" com uma mensagem pronta. Preço 0 aparece como <strong>Grátis</strong> para o cliente.</p>
         </div>
       </div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="card-header"><div><div class="card-titulo">Conta de demonstração</div>
+          <div class="card-sub">O login que você manda para quem quer conhecer a ferramenta. Entra numa clínica de exemplo cheia de dados — <strong>nada é salvo</strong> e tudo volta ao normal quando a pessoa fecha o navegador.</div></div></div>
+        <div class="card-body">
+          <div class="form-row" style="margin-bottom:14px">
+            <div><label class="form-label">E-mail de acesso</label>
+              <input class="form-input" id="cfg-demo-email" placeholder="demo@nastadesk.com.br"></div>
+            <div><label class="form-label">Senha</label>
+              <input class="form-input" id="cfg-demo-senha" placeholder="Demo@2026"></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;margin-bottom:14px">
+            <input type="checkbox" id="cfg-demo-ativo" checked style="width:16px;height:16px;cursor:pointer">
+            <span>Demonstração ativa (desmarque para desligar o acesso)</span>
+          </label>
+          <div style="background:var(--cinza-fundo);border-radius:11px;padding:14px 16px">
+            <div class="form-label" style="margin-bottom:8px">Mensagem pronta para enviar</div>
+            <textarea class="form-input" id="cfg-demo-msg" rows="5" readonly style="font-family:inherit;resize:vertical"></textarea>
+            <button class="btn" style="margin-top:10px" onclick="copiarConviteDemo()">Copiar convite</button>
+          </div>
+          <p class="custo-nota" style="margin:12px 0 0">⚠️ Esta senha fica <strong>visível para qualquer visitante</strong> (é assim que o app sabe reconhecer a demonstração) — por isso ela não dá acesso a dado nenhum de verdade: a demonstração roda inteira no navegador de quem testa. <strong>Nunca reaproveite</strong> uma senha usada em conta real.</p>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -979,6 +1002,35 @@ function renderConfig() {
   document.getElementById('cfg-site-preco').value = site.preco ?? 500;
   document.getElementById('cfg-site-preco-tri').value = site.preco_trimestral ?? 250;
   document.getElementById('cfg-site-preco-anual').value = site.preco_anual ?? 0;
+
+  const demo = (DADOS.config_publica && DADOS.config_publica.demo) || {};
+  document.getElementById('cfg-demo-email').value = demo.email || 'demo@nastadesk.com.br';
+  document.getElementById('cfg-demo-senha').value = demo.senha || 'Demo@2026';
+  document.getElementById('cfg-demo-ativo').checked = demo.ativo !== false;
+  atualizarConviteDemo();
+  ['cfg-demo-email', 'cfg-demo-senha'].forEach(i => {
+    document.getElementById(i).oninput = atualizarConviteDemo;
+  });
+}
+
+function atualizarConviteDemo() {
+  const email = document.getElementById('cfg-demo-email').value.trim() || 'demo@nastadesk.com.br';
+  const senha = document.getElementById('cfg-demo-senha').value.trim() || 'Demo@2026';
+  document.getElementById('cfg-demo-msg').value =
+    'Oi! Dá uma olhada no NastaDesk funcionando de verdade — é uma clínica de exemplo, ' +
+    'com agenda, pacientes, financeiro e tudo mais já preenchido:\n\n' +
+    'https://nastadesk.vercel.app\n' +
+    'E-mail: ' + email + '\n' +
+    'Senha: ' + senha + '\n\n' +
+    'Pode mexer à vontade — nada do que você fizer ali fica salvo. 😉';
+}
+
+function copiarConviteDemo() {
+  const t = document.getElementById('cfg-demo-msg');
+  t.select();
+  navigator.clipboard.writeText(t.value)
+    .then(() => toast('Convite copiado ✓'))
+    .catch(() => toast('Selecione o texto e copie manualmente', true));
 }
 
 async function salvarConfigPublica() {
@@ -995,12 +1047,19 @@ async function salvarConfigPublica() {
     preco_trimestral: Number(document.getElementById('cfg-site-preco-tri').value) || 0,
     preco_anual: Number(document.getElementById('cfg-site-preco-anual').value) || 0,
   };
+  const demo = {
+    email: document.getElementById('cfg-demo-email').value.trim() || 'demo@nastadesk.com.br',
+    senha: document.getElementById('cfg-demo-senha').value.trim() || 'Demo@2026',
+    ativo: document.getElementById('cfg-demo-ativo').checked,
+  };
   try {
     await api('salvar_config_publica', { chave: 'checkout_links', valor: links });
     await api('salvar_config_publica', { chave: 'site', valor: site });
+    await api('salvar_config_publica', { chave: 'demo', valor: demo });
     DADOS.config_publica = DADOS.config_publica || {};
     DADOS.config_publica.checkout_links = links;
     DADOS.config_publica.site = site;
+    DADOS.config_publica.demo = demo;
     toast('Configuração salva ✓ — o app das clínicas já usa esses valores');
   } catch (e) { toast('Erro: ' + e.message, true); }
 }

@@ -318,7 +318,7 @@ Deno.serve(async (req: Request) => {
     // ---------- CONFIG PÚBLICA (links de checkout + dados do site) ----------
     if (action === "salvar_config_publica") {
       const chave = body.chave;
-      if (!["checkout_links", "site"].includes(chave)) return json({ error: "chave_invalida" }, 400);
+      if (!["checkout_links", "site", "demo"].includes(chave)) return json({ error: "chave_invalida" }, 400);
       if (!body.valor || typeof body.valor !== "object") return json({ error: "valor_invalido" }, 400);
       const { error } = await admin.from("config_publica").upsert({
         chave, valor: body.valor, atualizado_em: new Date().toISOString(),
