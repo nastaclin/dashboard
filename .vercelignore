@@ -1,0 +1,6 @@
+# Nada aqui vai para a Vercel: o site e so o index.html + as imagens.
+# (o vercel.json ja filtra o que e SERVIDO; isto evita ate o upload)
+.claude/
+.github/
+supabase/
+*.md
