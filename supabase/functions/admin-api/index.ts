@@ -131,17 +131,21 @@ Deno.serve(async (req: Request) => {
       const [ano, mes] = ymd.split("-");
       const inicioMes = `${ano}-${mes}-01T00:00:00-03:00`;
 
-      const [clinicasRes, assinaturasRes, cfgRes, usoRes, cambioVivo] = await Promise.all([
+      const [clinicasRes, assinaturasRes, cfgRes, usoRes, cuponsRes, usosRes, sitesRes, cfgPubRes, cambioVivo] = await Promise.all([
         admin.from("clinicas")
           .select("id,nome,responsavel,whatsapp,email,plano,ativo,cortesia,cortesia_expira_em,criado_em,user_id")
           .order("criado_em", { ascending: false }),
         admin.from("assinaturas")
-          .select("id,clinica_id,plano,status,valor,provedor,criado_em,proximo_pagamento,atualizado_em")
+          .select("id,clinica_id,plano,periodo,status,valor,provedor,criado_em,proximo_pagamento,atualizado_em")
           .order("criado_em", { ascending: false }),
         admin.from("admin_config").select("value").eq("key", "custos").maybeSingle(),
         admin.from("ia_uso")
           .select("clinica_id,input_tokens,output_tokens,cache_creation_input_tokens,cache_read_input_tokens")
           .gte("criado_em", inicioMes),
+        admin.from("cupons").select("*").order("criado_em", { ascending: false }),
+        admin.from("cupom_usos").select("*").order("usado_em", { ascending: false }).limit(1000),
+        admin.from("sites").select("*").order("criado_em", { ascending: false }),
+        admin.from("config_publica").select("chave,valor"),
         cambioUSDBRL(),
       ]);
 
@@ -157,11 +161,18 @@ Deno.serve(async (req: Request) => {
         acc.cache_read_input_tokens += Number(r.cache_read_input_tokens || 0);
       }
 
+      const configPublica: Record<string, unknown> = {};
+      for (const r of (cfgPubRes.data || [])) configPublica[(r as any).chave] = (r as any).valor;
+
       return json({
         admin: { nome: adminRow?.nome || user.email },
         clinicas: clinicasRes.data || [],
         assinaturas: assinaturasRes.data || [],
         custos: cfgRes.data?.value || DEFAULT_CUSTOS,
+        cupons: cuponsRes.data || [],
+        cupom_usos: usosRes.data || [],
+        sites: sitesRes.data || [],
+        config_publica: configPublica,
         uso_ia: {
           periodo: `${ano}-${mes}`,
           disponivel: !usoRes.error,
@@ -205,6 +216,113 @@ Deno.serve(async (req: Request) => {
       const clinica_id = body.clinica_id;
       if (!clinica_id) return json({ error: "clinica_id_obrigatorio" }, 400);
       const { error } = await admin.rpc("admin_remover_acesso", { p_clinica_id: clinica_id });
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    // ---------- CUPONS DE PARCERIA ----------
+    if (action === "salvar_cupom") {
+      const c = body.cupom;
+      if (!c || !c.codigo || !c.parceiro_nome) return json({ error: "codigo_e_parceiro_obrigatorios" }, 400);
+      const linha: Record<string, unknown> = {
+        codigo: String(c.codigo).toUpperCase().replace(/\s/g, ""),
+        parceiro_nome: c.parceiro_nome,
+        parceiro_contato: c.parceiro_contato || null,
+        parceiro_chave_pix: c.parceiro_chave_pix || null,
+        tipo_desconto: c.tipo_desconto === "valor" ? "valor" : "percentual",
+        valor_desconto: Number(c.valor_desconto) || 0,
+        duracao_meses: (c.duracao_meses === null || c.duracao_meses === undefined || c.duracao_meses === "") ? null : Number(c.duracao_meses),
+        aplica_em: ["assinatura", "site", "ambos"].includes(c.aplica_em) ? c.aplica_em : "ambos",
+        comissao_tipo: ["percentual", "valor", "nenhuma"].includes(c.comissao_tipo) ? c.comissao_tipo : "percentual",
+        comissao_valor: Number(c.comissao_valor) || 0,
+        comissao_recorrente: !!c.comissao_recorrente,
+        ativo: c.ativo !== false,
+        validade: c.validade || null,
+        limite_usos: (c.limite_usos === null || c.limite_usos === undefined || c.limite_usos === "") ? null : Number(c.limite_usos),
+        observacao: c.observacao || null,
+        atualizado_em: new Date().toISOString(),
+      };
+      if (Number(linha.valor_desconto) <= 0) return json({ error: "desconto_precisa_ser_maior_que_zero" }, 400);
+      const r = c.id
+        ? await admin.from("cupons").update(linha).eq("id", c.id)
+        : await admin.from("cupons").insert(linha);
+      if (r.error) return json({ error: r.error.message }, 400);
+      return json({ ok: true });
+    }
+
+    if (action === "excluir_cupom") {
+      if (!body.cupom_id) return json({ error: "cupom_id_obrigatorio" }, 400);
+      // O histórico de uso NÃO é apagado: cupom_usos.cupom_id vira null e o
+      // código continua gravado, então o repasse já apurado nunca se perde.
+      const { error } = await admin.from("cupons").delete().eq("id", body.cupom_id);
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    if (action === "marcar_comissao") {
+      const ids: string[] = Array.isArray(body.uso_ids) ? body.uso_ids : [];
+      if (!ids.length) return json({ error: "uso_ids_obrigatorio" }, 400);
+      const paga = body.paga !== false;
+      const { error } = await admin.from("cupom_usos")
+        .update({ comissao_paga: paga, comissao_paga_em: paga ? new Date().toISOString() : null })
+        .in("id", ids);
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    if (action === "status_uso_cupom") {
+      // Marca um uso como confirmado/cancelado na mão (ex.: cliente pagou por fora).
+      if (!body.uso_id) return json({ error: "uso_id_obrigatorio" }, 400);
+      const st = ["pendente", "confirmado", "cancelado"].includes(body.status) ? body.status : null;
+      if (!st) return json({ error: "status_invalido" }, 400);
+      const { error } = await admin.from("cupom_usos")
+        .update({ status: st, confirmado_em: st === "confirmado" ? new Date().toISOString() : null })
+        .eq("id", body.uso_id);
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    // ---------- SITES DAS CLÍNICAS ----------
+    if (action === "salvar_site") {
+      const st = body.site;
+      if (!st || !st.clinica_id) return json({ error: "clinica_id_obrigatorio" }, 400);
+      const status = ["solicitado", "em_producao", "no_ar", "cancelado"].includes(st.status) ? st.status : "solicitado";
+      const linha: Record<string, unknown> = {
+        clinica_id: st.clinica_id,
+        status,
+        url: st.url || null,
+        valor_cobrado: (st.valor_cobrado === "" || st.valor_cobrado === null || st.valor_cobrado === undefined) ? null : Number(st.valor_cobrado),
+        valor_pago: (st.valor_pago === "" || st.valor_pago === null || st.valor_pago === undefined) ? null : Number(st.valor_pago),
+        gratuito: !!st.gratuito,
+        cupom_codigo: st.cupom_codigo ? String(st.cupom_codigo).toUpperCase() : null,
+        observacao: st.observacao || null,
+        entregue_em: status === "no_ar" ? (st.entregue_em || new Date().toISOString()) : null,
+        atualizado_em: new Date().toISOString(),
+      };
+      // Vinculado à clínica: 1 registro por clínica (upsert pela unique de clinica_id).
+      const { data: existente } = await admin.from("sites").select("id,solicitado_em,origem").eq("clinica_id", st.clinica_id).maybeSingle();
+      const r = existente
+        ? await admin.from("sites").update(linha).eq("id", existente.id)
+        : await admin.from("sites").insert({ ...linha, origem: "admin", solicitado_em: new Date().toISOString() });
+      if (r.error) return json({ error: r.error.message }, 400);
+      return json({ ok: true });
+    }
+
+    if (action === "excluir_site") {
+      if (!body.clinica_id) return json({ error: "clinica_id_obrigatorio" }, 400);
+      const { error } = await admin.from("sites").delete().eq("clinica_id", body.clinica_id);
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    // ---------- CONFIG PÚBLICA (links de checkout + dados do site) ----------
+    if (action === "salvar_config_publica") {
+      const chave = body.chave;
+      if (!["checkout_links", "site"].includes(chave)) return json({ error: "chave_invalida" }, 400);
+      if (!body.valor || typeof body.valor !== "object") return json({ error: "valor_invalido" }, 400);
+      const { error } = await admin.from("config_publica").upsert({
+        chave, valor: body.valor, atualizado_em: new Date().toISOString(),
+      });
       if (error) return json({ error: error.message }, 400);
       return json({ ok: true });
     }

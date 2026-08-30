@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NastaDesk — Painel Admin</title>
+<link rel="icon" type="image/png" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -19,7 +20,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
 
 /* SIDEBAR */
 .sidebar { width: 230px; min-height: 100vh; background: var(--cinza-escuro); display: flex; flex-direction: column; padding: 28px 0; position: fixed; top: 0; left: 0; z-index: 100; }
-.logo { padding: 0 24px 28px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.logo { padding: 0 24px 28px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 11px; }
+.logo-marca { width: 40px; height: 40px; flex: 0 0 auto; border-radius: 12px; background: #fff; display: flex; align-items: center; justify-content: center; padding: 5px; box-shadow: 0 4px 12px -6px rgba(0,0,0,.45); }
+.logo-marca img { width: 100%; height: auto; display: block; }
+.auth-marca { width: 96px; height: auto; display: block; margin: 0 auto 14px; }
 .logo-nome { font-family: 'DM Serif Display', serif; font-size: 21px; color: white; letter-spacing: -0.3px; }
 .logo-tag { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
 .logo-badge { display: inline-block; font-size: 10px; font-weight: 500; background: var(--verde); color: white; padding: 1px 7px; border-radius: 20px; margin-top: 8px; }
@@ -73,6 +77,28 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
 .busca-input:focus, .form-input:focus, .form-select:focus { border-color: var(--verde-medio); background: white; }
 
 /* TABELA */
+.modal-fundo { position: fixed; inset: 0; background: rgba(10,25,18,.55); z-index: 900; display: none; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+.modal-fundo.aberto { display: flex; }
+.modal-caixa { background: #fff; border-radius: 16px; width: 100%; max-width: 620px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px -20px rgba(0,0,0,.4); }
+.modal-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--cinza-claro); }
+.modal-x { border: 0; background: transparent; font-size: 16px; color: var(--cinza-medio); cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+.modal-x:hover { background: var(--creme); color: var(--cinza-escuro); }
+.modal-corpo { padding: 20px 22px; overflow-y: auto; }
+.modal-rodape { display: flex; gap: 10px; justify-content: flex-end; padding: 16px 22px; border-top: 1px solid var(--cinza-claro); flex-wrap: wrap; }
+.campo { margin-bottom: 14px; }
+.dica { font-size: 12px; color: var(--cinza-medio); line-height: 1.5; margin-top: 5px; }
+.pill-cp-ativo { background: var(--verde-claro); color: var(--verde); }
+.pill-cp-inativo { background: #EEE; color: #777; }
+.pill-st-solicitado { background: #FFF3D6; color: #8A5A00; }
+.pill-st-em_producao { background: #E4EDFF; color: #1F4FA8; }
+.pill-st-no_ar { background: var(--verde-claro); color: var(--verde); }
+.pill-st-cancelado { background: #EEE; color: #777; }
+.pill-us-pendente { background: #FFF3D6; color: #8A5A00; }
+.pill-us-confirmado { background: var(--verde-claro); color: var(--verde); }
+.pill-us-cancelado { background: #EEE; color: #777; }
+.cfg-grid-links { display: grid; gap: 10px; }
+.cfg-linha-link { display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 10px; align-items: center; }
+@media (max-width: 700px) { .cfg-linha-link { grid-template-columns: 1fr; } }
 .tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
 .tabela th { text-align: left; padding: 11px 22px; font-size: 11px; color: var(--cinza-medio); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--cinza-claro); background: var(--creme); }
 .tabela td { padding: 13px 22px; border-bottom: 1px solid var(--cinza-claro); vertical-align: middle; }
@@ -197,6 +223,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
 <!-- AUTH -->
 <div class="auth-wrap" id="auth-wrap" style="display:none">
   <div class="auth-box">
+    <img class="auth-marca" src="/logo.png" alt="Nastaclin" width="747" height="558">
     <div class="auth-titulo">Acesso restrito</div>
     <div class="auth-sub">Painel administrativo do NastaDesk</div>
     <div class="auth-aviso">⚠️ Área exclusiva do administrador.</div>
@@ -211,9 +238,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
 <div id="app-wrap" style="display:none;width:100%">
   <aside class="sidebar">
     <div class="logo">
+      <div class="logo-marca"><img src="/logo.png" alt="Nastaclin" width="747" height="558"></div>
+      <div>
       <div class="logo-nome">NastaDesk</div>
       <div class="logo-tag">Gestão de clínicas</div>
       <div class="logo-badge">Admin</div>
+      </div>
     </div>
     <nav class="nav">
       <div class="nav-item ativo" data-sec="visao" onclick="irPara('visao')">
@@ -228,9 +258,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         Assinaturas
       </div>
+      <div class="nav-item" data-sec="cupons" onclick="irPara('cupons')">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M15 5v2m0 4v2m0 4v2M5 5h14a2 2 0 012 2v3a2 2 0 000 4v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3a2 2 0 000-4V7a2 2 0 012-2z"/></svg>
+        Cupons
+      </div>
+      <div class="nav-item" data-sec="sites" onclick="irPara('sites')">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>
+        Sites
+      </div>
       <div class="nav-item" data-sec="custos" onclick="irPara('custos')">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 9v1m0-10c1.11 0 2.08.402 2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         Custos
+      </div>
+      <div class="nav-item" data-sec="config" onclick="irPara('config')">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 110-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 3.6 1.65 1.65 0 0010 2.09V2a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 8v0c.14.35.44.63.8.77H21a2 2 0 110 4h-.09c-.36.14-.66.42-.8.77z"/></svg>
+        Configurações
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -358,10 +400,129 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
       <p class="custo-nota" style="margin-top:16px">Ferramentas <strong>desativadas</strong> (hoje grátis) ficam fora do cálculo — ligue o toggle quando virarem pagas. Todos os valores são editáveis; clique em <strong>Salvar alterações</strong> para persistir.</p>
     </section>
 
+    <!-- CUPONS DE PARCERIA -->
+    <section id="sec-cupons" class="sec">
+      <div class="topbar">
+        <div class="topbar-titulo"><h1>Cupons de parceria</h1><p>Cada parceiro tem o seu código: você vê quem indicou, quantos usaram no mês e quanto repassar</p></div>
+        <button class="btn btn-primario" onclick="abrirCupom(null)">+ Novo cupom</button>
+      </div>
+
+      <div class="metricas">
+        <div class="metrica-card verde"><div class="metrica-label">Cupons ativos</div><div class="metrica-valor" id="cp-ativos">—</div><span class="metrica-badge badge-verde" id="cp-ativos-sub">—</span></div>
+        <div class="metrica-card"><div class="metrica-label">Usos no mês</div><div class="metrica-valor" id="cp-usos-mes">—</div><span class="metrica-badge" id="cp-usos-sub">—</span></div>
+        <div class="metrica-card"><div class="metrica-label">Comissão a pagar</div><div class="metrica-valor" id="cp-comissao">—</div><span class="metrica-badge" id="cp-comissao-sub">pendente de repasse</span></div>
+        <div class="metrica-card"><div class="metrica-label">Já repassado no mês</div><div class="metrica-valor" id="cp-pago">—</div><span class="metrica-badge">marcado como pago</span></div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-header">
+          <div><div class="card-titulo">Repasse por parceiro</div><div class="card-sub" id="cp-mes-label">—</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="form-select" id="cp-competencia" style="width:auto" onchange="renderCupons()"></select>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tabela">
+            <thead><tr>
+              <th>Cupom / parceiro</th><th>Desconto</th><th>Comissão</th>
+              <th class="right">Usos no mês</th><th class="right">A repassar</th><th></th>
+            </tr></thead>
+            <tbody id="cupons-tbody"><tr><td colspan="6"><div class="loading"><div class="loading-spinner"></div>Carregando...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div><div class="card-titulo">Quem usou cupom</div><div class="card-sub">Cada linha é um cliente que entrou por um parceiro</div></div></div>
+        <div style="overflow-x:auto">
+          <table class="tabela">
+            <thead><tr>
+              <th>Data</th><th>Cliente</th><th>Cupom</th><th>O quê</th>
+              <th class="right">Pagou</th><th class="right">Comissão</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="cupom-usos-tbody"><tr><td colspan="8"><div class="empty">Nenhum uso ainda</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SITES DAS CLÍNICAS -->
+    <section id="sec-sites" class="sec">
+      <div class="topbar">
+        <div class="topbar-titulo"><h1>Sites</h1><p>Quem pediu, quem já tem site feito pela Nastaclin e quanto entrou</p></div>
+        <button class="btn btn-primario" onclick="abrirSite(null)">+ Marcar site de um cliente</button>
+      </div>
+
+      <div class="metricas">
+        <div class="metrica-card verde"><div class="metrica-label">Sites no ar</div><div class="metrica-valor" id="st-noar">—</div><span class="metrica-badge badge-verde">entregues</span></div>
+        <div class="metrica-card"><div class="metrica-label">Pedidos abertos</div><div class="metrica-valor" id="st-pedidos">—</div><span class="metrica-badge" id="st-pedidos-sub">a responder</span></div>
+        <div class="metrica-card"><div class="metrica-label">Em produção</div><div class="metrica-valor" id="st-producao">—</div><span class="metrica-badge">fazendo agora</span></div>
+        <div class="metrica-card"><div class="metrica-label">Receita de sites</div><div class="metrica-valor" id="st-receita">—</div><span class="metrica-badge">total recebido</span></div>
+      </div>
+
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table class="tabela">
+            <thead><tr>
+              <th>Clínica</th><th>Status</th><th>Endereço</th><th>Pedido em</th>
+              <th class="right">Cobrado</th><th class="right">Pago</th><th></th>
+            </tr></thead>
+            <tbody id="sites-tbody"><tr><td colspan="7"><div class="loading"><div class="loading-spinner"></div>Carregando...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONFIGURAÇÕES (links de checkout + site) -->
+    <section id="sec-config" class="sec">
+      <div class="topbar">
+        <div class="topbar-titulo"><h1>Configurações</h1><p>Links de pagamento por período, WhatsApp e preço do site — o app das clínicas lê daqui</p></div>
+        <button class="btn btn-primario" onclick="salvarConfigPublica()">Salvar alterações</button>
+      </div>
+
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-header"><div><div class="card-titulo">Links de checkout da Cakto</div>
+          <div class="card-sub">Um link por plano e período. Enquanto um link estiver vazio, o botão daquele período avisa o cliente e oferece o WhatsApp em vez de quebrar.</div></div></div>
+        <div class="card-body" id="cfg-links"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div><div class="card-titulo">Site da clínica</div>
+          <div class="card-sub">Número que recebe os pedidos de site e a tabela de preços mostrada no app.</div></div></div>
+        <div class="card-body">
+          <div class="form-row" style="margin-bottom:14px">
+            <div><label class="form-label">WhatsApp que recebe os pedidos</label>
+              <input class="form-input" id="cfg-site-wpp" placeholder="5521984072359"></div>
+            <div><label class="form-label">Preço cheio (mensal)</label>
+              <input class="form-input" id="cfg-site-preco" type="number" min="0" step="1"></div>
+          </div>
+          <div class="form-row">
+            <div><label class="form-label">Preço no trimestral</label>
+              <input class="form-input" id="cfg-site-preco-tri" type="number" min="0" step="1"></div>
+            <div><label class="form-label">Preço no anual</label>
+              <input class="form-input" id="cfg-site-preco-anual" type="number" min="0" step="1"></div>
+          </div>
+          <p class="custo-nota" style="margin:12px 0 0">O número entra no botão "Quero meu site" com uma mensagem pronta. Preço 0 aparece como <strong>Grátis</strong> para o cliente.</p>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
 <div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg"></span></div>
+
+<!-- Modal genérico (cupom / site) -->
+<div class="modal-fundo" id="modal-fundo" onclick="if(event.target===this)fecharModal()">
+  <div class="modal-caixa">
+    <div class="modal-topo">
+      <div class="card-titulo" id="modal-titulo">—</div>
+      <button class="modal-x" onclick="fecharModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-corpo" id="modal-corpo"></div>
+    <div class="modal-rodape" id="modal-rodape"></div>
+  </div>
+</div>
 
 <script>
 const SUPA_URL = 'https://zrkadblxozddreiwruhv.supabase.co';
@@ -374,7 +535,7 @@ const PLANO_LABEL = { basico: 'Básica', profissional: 'Profissional', premium: 
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
-let DADOS = { admin: null, clinicas: [], assinaturas: [], custos: null, uso_ia: { periodo: '', disponivel: false, clinicas: [] }, cambio_vivo: null };
+let DADOS = { admin: null, clinicas: [], assinaturas: [], custos: null, uso_ia: { periodo: '', disponivel: false, clinicas: [] }, cambio_vivo: null, cupons: [], cupom_usos: [], sites: [], config_publica: {} };
 let subsPorClinica = {};
 
 /* ---------- AUTH ---------- */
@@ -431,6 +592,427 @@ function mostrarLogin(msg) {
 
 function ocultarSplash() {
   setTimeout(() => { const s = document.getElementById('splash'); if (s) s.classList.add('oculto'); }, 250);
+}
+
+
+/* ================= CUPONS DE PARCERIA ================= */
+// Fluxo: você cria o cupom aqui E o mesmo código na Cakto (é lá que o desconto
+// sai de fato no pagamento). Aqui fica o rastreio: qual parceiro trouxe o
+// cliente, quantos usaram no mês e quanto você deve repassar.
+const PERIODO_LABEL = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual' };
+const CONTEXTO_LABEL = { assinatura: 'Assinatura', site: 'Site' };
+
+function competenciaAtual() {
+  const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  return ymd.slice(0, 7);
+}
+function competenciaBonita(c) {
+  if (!c) return '—';
+  const [a, m] = c.split('-');
+  const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  return `${meses[Number(m) - 1] || m} de ${a}`;
+}
+function descontoTexto(c) {
+  const v = c.tipo_desconto === 'percentual' ? `${Number(c.valor_desconto)}%` : brl2(c.valor_desconto);
+  const dur = c.duracao_meses == null ? 'sempre'
+    : c.duracao_meses === 1 ? '1º mês'
+    : `${c.duracao_meses} meses`;
+  return `${v} · ${dur}`;
+}
+function comissaoTexto(c) {
+  if (c.comissao_tipo === 'nenhuma') return '—';
+  return c.comissao_tipo === 'percentual' ? `${Number(c.comissao_valor)}%` : brl2(c.comissao_valor);
+}
+function usosDoCupom(cupomId, competencia) {
+  return (DADOS.cupom_usos || []).filter(u =>
+    u.cupom_id === cupomId && u.status !== 'cancelado' && (!competencia || u.competencia === competencia));
+}
+
+function renderCupons() {
+  const cupons = DADOS.cupons || [];
+  const usos = DADOS.cupom_usos || [];
+
+  // seletor de competência (mês) — o repasse é fechado por mês
+  const sel = document.getElementById('cp-competencia');
+  const meses = [...new Set([competenciaAtual(), ...usos.map(u => u.competencia).filter(Boolean)])].sort().reverse();
+  const escolhido = (sel && sel.value && meses.includes(sel.value)) ? sel.value : meses[0];
+  if (sel) sel.innerHTML = meses.map(m => `<option value="${m}" ${m === escolhido ? 'selected' : ''}>${competenciaBonita(m)}</option>`).join('');
+  document.getElementById('cp-mes-label').textContent = `Fechamento de ${competenciaBonita(escolhido)}`;
+
+  const doMes = usos.filter(u => u.competencia === escolhido && u.status !== 'cancelado');
+  const aPagar = doMes.filter(u => !u.comissao_paga).reduce((a, u) => a + Number(u.comissao_prevista || 0), 0);
+  const pago = doMes.filter(u => u.comissao_paga).reduce((a, u) => a + Number(u.comissao_prevista || 0), 0);
+  const confirmados = doMes.filter(u => u.status === 'confirmado').length;
+
+  document.getElementById('cp-ativos').textContent = cupons.filter(c => c.ativo).length;
+  document.getElementById('cp-ativos-sub').textContent = `de ${cupons.length} cadastrados`;
+  document.getElementById('cp-usos-mes').textContent = doMes.length;
+  document.getElementById('cp-usos-sub').textContent = `${confirmados} com pagamento confirmado`;
+  document.getElementById('cp-comissao').textContent = brl2(aPagar);
+  document.getElementById('cp-pago').textContent = brl2(pago);
+
+  const tb = document.getElementById('cupons-tbody');
+  if (!cupons.length) {
+    tb.innerHTML = '<tr><td colspan="6"><div class="empty">Nenhum cupom ainda. Crie o primeiro para começar a fechar parcerias.</div></td></tr>';
+  } else {
+    tb.innerHTML = cupons.map(c => {
+      const us = usosDoCupom(c.id, escolhido);
+      const valor = us.filter(u => !u.comissao_paga).reduce((a, u) => a + Number(u.comissao_prevista || 0), 0);
+      const idsAbertos = us.filter(u => !u.comissao_paga).map(u => u.id);
+      return `<tr>
+        <td>
+          <div class="td-nome">${escapeHtml(c.codigo)} <span class="pill ${c.ativo ? 'pill-cp-ativo' : 'pill-cp-inativo'}">${c.ativo ? 'ativo' : 'inativo'}</span></div>
+          <div class="td-sub">${escapeHtml(c.parceiro_nome)}${c.parceiro_contato ? ' · ' + escapeHtml(c.parceiro_contato) : ''}</div>
+        </td>
+        <td>${escapeHtml(descontoTexto(c))}<div class="td-sub">${escapeHtml(c.aplica_em)}</div></td>
+        <td>${escapeHtml(comissaoTexto(c))}${c.comissao_recorrente ? '<div class="td-sub">recorrente</div>' : ''}</td>
+        <td class="right">${us.length}</td>
+        <td class="right">${valor ? brl2(valor) : '<span class="muted">—</span>'}</td>
+        <td class="right" style="white-space:nowrap">
+          ${idsAbertos.length ? `<button class="btn btn-secundario btn-mini" onclick='marcarComissao(${JSON.stringify(idsAbertos)}, this)'>Marcar pago</button> ` : ''}
+          <button class="btn btn-secundario btn-mini" onclick="abrirCupom('${c.id}')">Editar</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  const tu = document.getElementById('cupom-usos-tbody');
+  const lista = usos.slice(0, 200);
+  if (!lista.length) {
+    tu.innerHTML = '<tr><td colspan="8"><div class="empty">Nenhum uso ainda</div></td></tr>';
+  } else {
+    tu.innerHTML = lista.map(u => {
+      const clinica = DADOS.clinicas.find(c => c.id === u.clinica_id);
+      const oQue = u.contexto === 'site' ? 'Site'
+        : `${(u.plano || '').charAt(0).toUpperCase() + (u.plano || '').slice(1)} ${PERIODO_LABEL[u.periodo] || ''}`.trim();
+      return `<tr>
+        <td class="muted">${u.dia}/${String(u.mes).padStart(2, '0')}/${u.ano}</td>
+        <td><div class="td-nome">${escapeHtml((clinica && clinica.nome) || u.clinica_nome || '—')}</div>
+            <div class="td-sub">${escapeHtml(u.email || '')}</div></td>
+        <td>${escapeHtml(u.codigo)}</td>
+        <td>${escapeHtml(oQue)}<div class="td-sub">${CONTEXTO_LABEL[u.contexto] || u.contexto}</div></td>
+        <td class="right">${u.valor_final != null ? brl2(u.valor_final) : '—'}</td>
+        <td class="right">${u.comissao_prevista != null ? brl2(u.comissao_prevista) : '—'}
+            ${u.comissao_paga ? '<div class="td-sub">repassado ✓</div>' : ''}</td>
+        <td><span class="pill pill-us-${u.status}">${u.status}</span></td>
+        <td class="right" style="white-space:nowrap">
+          ${u.status === 'pendente' ? `<button class="btn btn-secundario btn-mini" onclick="statusUso('${u.id}','confirmado',this)">Confirmar</button> ` : ''}
+          ${u.status !== 'cancelado' ? `<button class="btn btn-secundario btn-mini" onclick="statusUso('${u.id}','cancelado',this)">Cancelar</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+async function marcarComissao(ids, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try {
+    await api('marcar_comissao', { uso_ids: ids, paga: true });
+    (DADOS.cupom_usos || []).forEach(u => { if (ids.includes(u.id)) { u.comissao_paga = true; u.comissao_paga_em = new Date().toISOString(); } });
+    toast('Repasse marcado como pago ✓');
+    renderCupons();
+  } catch (e) { toast('Erro: ' + e.message, true); if (btn) { btn.disabled = false; btn.textContent = 'Marcar pago'; } }
+}
+
+async function statusUso(id, status, btn) {
+  if (btn) { btn.disabled = true; }
+  try {
+    await api('status_uso_cupom', { uso_id: id, status });
+    const u = (DADOS.cupom_usos || []).find(x => x.id === id);
+    if (u) u.status = status;
+    toast('Atualizado ✓');
+    renderCupons();
+  } catch (e) { toast('Erro: ' + e.message, true); if (btn) btn.disabled = false; }
+}
+
+/* ---------- Modal genérico ---------- */
+function abrirModal(titulo, corpoHtml, rodapeHtml) {
+  document.getElementById('modal-titulo').textContent = titulo;
+  document.getElementById('modal-corpo').innerHTML = corpoHtml;
+  document.getElementById('modal-rodape').innerHTML = rodapeHtml;
+  document.getElementById('modal-fundo').classList.add('aberto');
+}
+function fecharModal() { document.getElementById('modal-fundo').classList.remove('aberto'); }
+
+function abrirCupom(id) {
+  const c = (DADOS.cupons || []).find(x => x.id === id) || {
+    codigo: '', parceiro_nome: '', parceiro_contato: '', parceiro_chave_pix: '',
+    tipo_desconto: 'percentual', valor_desconto: 10, duracao_meses: '', aplica_em: 'ambos',
+    comissao_tipo: 'percentual', comissao_valor: 20, comissao_recorrente: false,
+    ativo: true, validade: '', limite_usos: '', observacao: '',
+  };
+  const sel = (v, op) => op.map(([val, lab]) => `<option value="${val}" ${String(v) === val ? 'selected' : ''}>${lab}</option>`).join('');
+  abrirModal(id ? 'Editar cupom' : 'Novo cupom de parceria', `
+    <input type="hidden" id="cu-id" value="${id || ''}">
+    <div class="form-row">
+      <div class="campo"><label class="form-label">Código do cupom</label>
+        <input class="form-input" id="cu-codigo" value="${escapeHtml(c.codigo)}" placeholder="EX: MARIA10" style="text-transform:uppercase">
+        <div class="dica">Cadastre o <strong>mesmo código na Cakto</strong> — é lá que o desconto sai no pagamento.</div></div>
+      <div class="campo"><label class="form-label">Parceiro (quem indica)</label>
+        <input class="form-input" id="cu-parceiro" value="${escapeHtml(c.parceiro_nome)}" placeholder="Nome do parceiro"></div>
+    </div>
+    <div class="form-row">
+      <div class="campo"><label class="form-label">Contato do parceiro</label>
+        <input class="form-input" id="cu-contato" value="${escapeHtml(c.parceiro_contato || '')}" placeholder="WhatsApp ou e-mail"></div>
+      <div class="campo"><label class="form-label">Chave Pix (para o repasse)</label>
+        <input class="form-input" id="cu-pix" value="${escapeHtml(c.parceiro_chave_pix || '')}" placeholder="Opcional"></div>
+    </div>
+
+    <div class="card-titulo" style="font-size:13px;margin:6px 0 10px">Desconto que o CLIENTE ganha</div>
+    <div class="form-row">
+      <div class="campo"><label class="form-label">Tipo</label>
+        <select class="form-select" id="cu-tipo">${sel(c.tipo_desconto, [['percentual','% de desconto'],['valor','R$ de desconto']])}</select></div>
+      <div class="campo"><label class="form-label">Valor</label>
+        <input class="form-input" id="cu-valor" type="number" min="0" step="0.01" value="${c.valor_desconto}"></div>
+    </div>
+    <div class="form-row">
+      <div class="campo"><label class="form-label">Dura quantos meses?</label>
+        <input class="form-input" id="cu-duracao" type="number" min="1" step="1" value="${c.duracao_meses ?? ''}" placeholder="vazio = para sempre">
+        <div class="dica">Ex.: <strong>1</strong> = só o 1º mês (90% off no 1º mês). Vazio = desconto em todas as cobranças.</div></div>
+      <div class="campo"><label class="form-label">Vale para</label>
+        <select class="form-select" id="cu-aplica">${sel(c.aplica_em, [['ambos','Assinatura e site'],['assinatura','Só assinatura'],['site','Só o site']])}</select></div>
+    </div>
+
+    <div class="card-titulo" style="font-size:13px;margin:6px 0 10px">Comissão que o PARCEIRO recebe</div>
+    <div class="form-row">
+      <div class="campo"><label class="form-label">Tipo</label>
+        <select class="form-select" id="cu-ctipo">${sel(c.comissao_tipo, [['percentual','% do que o cliente pagou'],['valor','R$ fixo por cliente'],['nenhuma','Sem comissão']])}</select></div>
+      <div class="campo"><label class="form-label">Valor</label>
+        <input class="form-input" id="cu-cvalor" type="number" min="0" step="0.01" value="${c.comissao_valor}"></div>
+    </div>
+    <div class="campo"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="cu-crec" ${c.comissao_recorrente ? 'checked' : ''}> Comissão recorrente (todo mês que o cliente pagar)
+    </label><div class="dica">Só marca o cupom. O valor mostrado no fechamento é o do uso registrado.</div></div>
+
+    <div class="card-titulo" style="font-size:13px;margin:6px 0 10px">Controle</div>
+    <div class="form-row">
+      <div class="campo"><label class="form-label">Validade</label>
+        <input class="form-input" id="cu-validade" type="date" value="${c.validade || ''}">
+        <div class="dica">Vazio = sem prazo.</div></div>
+      <div class="campo"><label class="form-label">Limite de usos</label>
+        <input class="form-input" id="cu-limite" type="number" min="1" step="1" value="${c.limite_usos ?? ''}" placeholder="vazio = ilimitado"></div>
+    </div>
+    <div class="campo"><label class="form-label">Observação</label>
+      <input class="form-input" id="cu-obs" value="${escapeHtml(c.observacao || '')}" placeholder="Ex.: parceria fechada no Instagram"></div>
+    <div class="campo"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="cu-ativo" ${c.ativo !== false ? 'checked' : ''}> Cupom ativo
+    </label></div>
+  `, `
+    ${id ? `<button class="btn btn-perigo" onclick="excluirCupom('${id}')" style="margin-right:auto">Excluir</button>` : ''}
+    <button class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>
+    <button class="btn btn-primario" id="cu-salvar" onclick="salvarCupom()">Salvar cupom</button>
+  `);
+}
+
+async function salvarCupom() {
+  const v = (id) => document.getElementById(id).value.trim();
+  const cupom = {
+    id: v('cu-id') || null,
+    codigo: v('cu-codigo').toUpperCase(),
+    parceiro_nome: v('cu-parceiro'),
+    parceiro_contato: v('cu-contato'),
+    parceiro_chave_pix: v('cu-pix'),
+    tipo_desconto: v('cu-tipo'),
+    valor_desconto: v('cu-valor'),
+    duracao_meses: v('cu-duracao'),
+    aplica_em: v('cu-aplica'),
+    comissao_tipo: v('cu-ctipo'),
+    comissao_valor: v('cu-cvalor'),
+    comissao_recorrente: document.getElementById('cu-crec').checked,
+    validade: v('cu-validade'),
+    limite_usos: v('cu-limite'),
+    observacao: v('cu-obs'),
+    ativo: document.getElementById('cu-ativo').checked,
+  };
+  if (!cupom.codigo) { toast('Dê um código ao cupom', true); return; }
+  if (!cupom.parceiro_nome) { toast('Diga de quem é o cupom', true); return; }
+  if (!(Number(cupom.valor_desconto) > 0)) { toast('O desconto precisa ser maior que zero', true); return; }
+  const btn = document.getElementById('cu-salvar');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    await api('salvar_cupom', { cupom });
+    toast('Cupom salvo ✓');
+    fecharModal();
+    await recarregarTudo();
+  } catch (e) {
+    toast('Erro: ' + (/duplicate|unique/i.test(e.message) ? 'já existe um cupom com esse código' : e.message), true);
+    btn.disabled = false; btn.textContent = 'Salvar cupom';
+  }
+}
+
+async function excluirCupom(id) {
+  if (!confirm('Excluir este cupom? O histórico de quem já usou continua salvo (para você não perder o repasse já apurado).')) return;
+  try {
+    await api('excluir_cupom', { cupom_id: id });
+    toast('Cupom excluído');
+    fecharModal();
+    await recarregarTudo();
+  } catch (e) { toast('Erro: ' + e.message, true); }
+}
+
+/* ================= SITES ================= */
+const SITE_STATUS_LABEL = { solicitado: 'Pedido', em_producao: 'Em produção', no_ar: 'No ar', cancelado: 'Cancelado' };
+
+function renderSites() {
+  const sites = DADOS.sites || [];
+  const nome = (id) => { const c = DADOS.clinicas.find(x => x.id === id); return (c && c.nome) || '—'; };
+  document.getElementById('st-noar').textContent = sites.filter(s => s.status === 'no_ar').length;
+  document.getElementById('st-pedidos').textContent = sites.filter(s => s.status === 'solicitado').length;
+  document.getElementById('st-producao').textContent = sites.filter(s => s.status === 'em_producao').length;
+  document.getElementById('st-receita').textContent = brl(sites.reduce((a, s) => a + Number(s.valor_pago || 0), 0));
+
+  const tb = document.getElementById('sites-tbody');
+  if (!sites.length) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty">Nenhum site ainda. Quando um cliente pedir pelo app, ele aparece aqui.</div></td></tr>';
+    return;
+  }
+  tb.innerHTML = sites.map(s => `<tr>
+    <td><div class="td-nome">${escapeHtml(nome(s.clinica_id))}</div>
+        <div class="td-sub">${s.origem === 'cliente' ? 'pediu pelo app' : 'lançado por você'}${s.gratuito ? ' · grátis' : ''}${s.cupom_codigo ? ' · cupom ' + escapeHtml(s.cupom_codigo) : ''}</div></td>
+    <td><span class="pill pill-st-${s.status}">${SITE_STATUS_LABEL[s.status] || s.status}</span></td>
+    <td>${s.url ? `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener" style="color:var(--verde);word-break:break-all">${escapeHtml(s.url)}</a>` : '<span class="muted">—</span>'}</td>
+    <td class="muted">${dataBR(s.solicitado_em || s.criado_em)}</td>
+    <td class="right">${s.valor_cobrado != null ? brl2(s.valor_cobrado) : '<span class="muted">—</span>'}</td>
+    <td class="right">${s.valor_pago != null ? brl2(s.valor_pago) : '<span class="muted">—</span>'}</td>
+    <td class="right"><button class="btn btn-secundario btn-mini" onclick="abrirSite('${s.clinica_id}')">Editar</button></td>
+  </tr>`).join('');
+}
+
+function abrirSite(clinicaId) {
+  const s = (DADOS.sites || []).find(x => x.clinica_id === clinicaId) || {
+    clinica_id: clinicaId || '', status: 'solicitado', url: '', valor_cobrado: '',
+    valor_pago: '', gratuito: false, cupom_codigo: '', observacao: '',
+  };
+  const opcoes = DADOS.clinicas.map(c => `<option value="${c.id}" ${c.id === s.clinica_id ? 'selected' : ''}>${escapeHtml(c.nome || 'Sem nome')}</option>`).join('');
+  const st = (v) => ['solicitado', 'em_producao', 'no_ar', 'cancelado']
+    .map(x => `<option value="${x}" ${s.status === x ? 'selected' : ''}>${SITE_STATUS_LABEL[x]}</option>`).join('');
+  abrirModal(clinicaId ? 'Site da clínica' : 'Marcar site de um cliente', `
+    <div class="campo"><label class="form-label">Clínica</label>
+      <select class="form-select" id="si-clinica" ${clinicaId ? 'disabled' : ''}>${opcoes}</select>
+      <div class="dica">Marcando <strong>No ar</strong>, a tela do cliente no app muda sozinha de "criar site" para "editar site".</div></div>
+    <div class="form-row">
+      <div class="campo"><label class="form-label">Status</label><select class="form-select" id="si-status">${st()}</select></div>
+      <div class="campo"><label class="form-label">Endereço do site</label>
+        <input class="form-input" id="si-url" value="${escapeHtml(s.url || '')}" placeholder="https://..."></div>
+    </div>
+    <div class="form-row">
+      <div class="campo"><label class="form-label">Valor cobrado</label>
+        <input class="form-input" id="si-cobrado" type="number" min="0" step="0.01" value="${s.valor_cobrado ?? ''}"></div>
+      <div class="campo"><label class="form-label">Valor recebido</label>
+        <input class="form-input" id="si-pago" type="number" min="0" step="0.01" value="${s.valor_pago ?? ''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="campo"><label class="form-label">Cupom usado</label>
+        <input class="form-input" id="si-cupom" value="${escapeHtml(s.cupom_codigo || '')}" placeholder="Opcional" style="text-transform:uppercase"></div>
+      <div class="campo"><label class="form-label">Observação</label>
+        <input class="form-input" id="si-obs" value="${escapeHtml(s.observacao || '')}"></div>
+    </div>
+    <div class="campo"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="si-gratis" ${s.gratuito ? 'checked' : ''}> Site foi de cortesia (plano anual)
+    </label></div>
+  `, `
+    ${clinicaId ? `<button class="btn btn-perigo" onclick="excluirSite('${clinicaId}')" style="margin-right:auto">Excluir registro</button>` : ''}
+    <button class="btn btn-secundario" onclick="fecharModal()">Cancelar</button>
+    <button class="btn btn-primario" id="si-salvar" onclick="salvarSite()">Salvar</button>
+  `);
+}
+
+async function salvarSite() {
+  const site = {
+    clinica_id: document.getElementById('si-clinica').value,
+    status: document.getElementById('si-status').value,
+    url: document.getElementById('si-url').value.trim(),
+    valor_cobrado: document.getElementById('si-cobrado').value,
+    valor_pago: document.getElementById('si-pago').value,
+    cupom_codigo: document.getElementById('si-cupom').value.trim(),
+    observacao: document.getElementById('si-obs').value.trim(),
+    gratuito: document.getElementById('si-gratis').checked,
+  };
+  if (!site.clinica_id) { toast('Escolha a clínica', true); return; }
+  if (site.status === 'no_ar' && !site.url) { toast('Um site "no ar" precisa do endereço', true); return; }
+  const btn = document.getElementById('si-salvar');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    await api('salvar_site', { site });
+    toast('Site salvo ✓');
+    fecharModal();
+    await recarregarTudo();
+  } catch (e) { toast('Erro: ' + e.message, true); btn.disabled = false; btn.textContent = 'Salvar'; }
+}
+
+async function excluirSite(clinicaId) {
+  if (!confirm('Excluir o registro de site desta clínica? A tela dela no app volta a oferecer "criar site".')) return;
+  try {
+    await api('excluir_site', { clinica_id: clinicaId });
+    toast('Registro excluído');
+    fecharModal();
+    await recarregarTudo();
+  } catch (e) { toast('Erro: ' + e.message, true); }
+}
+
+/* ================= CONFIGURAÇÕES PÚBLICAS ================= */
+const PRECOS_PERIODO_ADM = {
+  mensal: { basico: 97, profissional: 197, premium: 347 },
+  trimestral: { basico: 262, profissional: 532, premium: 937 },
+  anual: { basico: 931, profissional: 1891, premium: 3331 },
+};
+
+function renderConfig() {
+  const links = (DADOS.config_publica && DADOS.config_publica.checkout_links) || {};
+  const site = (DADOS.config_publica && DADOS.config_publica.site) || {};
+  const planos = ['basico', 'profissional', 'premium'];
+  document.getElementById('cfg-links').innerHTML = ['mensal', 'trimestral', 'anual'].map(per => `
+    <div style="margin-bottom:18px">
+      <div class="card-titulo" style="font-size:13px;margin-bottom:8px">
+        ${PERIODO_LABEL[per]}
+        ${per !== 'mensal' ? `<span class="pill pill-cp-ativo" style="margin-left:6px">${per === 'anual' ? '-20% · site grátis' : '-10% · site pela metade'}</span>` : ''}
+      </div>
+      <div class="cfg-grid-links">
+        ${planos.map(pl => `<div class="cfg-linha-link">
+          <label class="form-label" style="margin:0">${PLANO_LABEL[pl]} · ${brl(PRECOS_PERIODO_ADM[per][pl])}</label>
+          <input class="form-input" id="cfg-link-${per}-${pl}" value="${escapeHtml(((links[per] || {})[pl]) || '')}" placeholder="https://pay.cakto.com.br/...">
+        </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  document.getElementById('cfg-site-wpp').value = site.whatsapp || '';
+  document.getElementById('cfg-site-preco').value = site.preco ?? 500;
+  document.getElementById('cfg-site-preco-tri').value = site.preco_trimestral ?? 250;
+  document.getElementById('cfg-site-preco-anual').value = site.preco_anual ?? 0;
+}
+
+async function salvarConfigPublica() {
+  const links = {};
+  for (const per of ['mensal', 'trimestral', 'anual']) {
+    links[per] = {};
+    for (const pl of ['basico', 'profissional', 'premium']) {
+      links[per][pl] = document.getElementById(`cfg-link-${per}-${pl}`).value.trim();
+    }
+  }
+  const site = {
+    whatsapp: document.getElementById('cfg-site-wpp').value.replace(/\D/g, ''),
+    preco: Number(document.getElementById('cfg-site-preco').value) || 0,
+    preco_trimestral: Number(document.getElementById('cfg-site-preco-tri').value) || 0,
+    preco_anual: Number(document.getElementById('cfg-site-preco-anual').value) || 0,
+  };
+  try {
+    await api('salvar_config_publica', { chave: 'checkout_links', valor: links });
+    await api('salvar_config_publica', { chave: 'site', valor: site });
+    DADOS.config_publica = DADOS.config_publica || {};
+    DADOS.config_publica.checkout_links = links;
+    DADOS.config_publica.site = site;
+    toast('Configuração salva ✓ — o app das clínicas já usa esses valores');
+  } catch (e) { toast('Erro: ' + e.message, true); }
+}
+
+async function recarregarTudo() {
+  const d = await api('bootstrap');
+  DADOS = d;
+  DADOS.custos = DADOS.custos || { moeda: 'BRL', ferramentas: [] };
+  DADOS.uso_ia = DADOS.uso_ia || { periodo: '', disponivel: false, clinicas: [] };
+  normalizarCustos();
+  computar();
+  renderTudo();
 }
 
 /* ---------- API (Edge Function admin) ---------- */
@@ -520,9 +1102,15 @@ function statusClinica(c) {
   return { key: 'suspensa', label: 'Suspensa' };
 }
 
+const MESES_PERIODO = { mensal: 1, trimestral: 3, anual: 12 };
+// Valor mensal equivalente de uma assinatura (o valor gravado é o do período pago).
+function mensalizar(s) {
+  const meses = MESES_PERIODO[s && s.periodo] || 1;
+  return Number((s && s.valor) || 0) / meses;
+}
 function subAtiva(c) { return (subsPorClinica[c.id] || []).find(s => s.status === 'ativa') || null; }
 function ultimaSub(c) { const subs = subsPorClinica[c.id] || []; return subs.length ? subs[0] : null; }
-function receitaClinica(c) { const a = subAtiva(c); return a ? Number(a.valor || 0) : 0; }
+function receitaClinica(c) { const a = subAtiva(c); return a ? mensalizar(a) : 0; }
 
 function metrics() {
   const clinicas = DADOS.clinicas;
@@ -534,7 +1122,9 @@ function metrics() {
     if (st.key === 'sem_plano') semPlano++;
     if (st.key === 'ativa' && !c.cortesia && subAtiva(c)) pagantes++;
   }
-  const mrr = DADOS.assinaturas.filter(s => s.status === 'ativa').reduce((a, s) => a + Number(s.valor || 0), 0);
+  // MRR = receita MENSAL recorrente. Uma assinatura anual de R$ 1.891 não são
+  // R$ 1.891/mês — divide pelo nº de meses do período para não inflar a métrica.
+  const mrr = DADOS.assinaturas.filter(s => s.status === 'ativa').reduce((a, s) => a + mensalizar(s), 0);
   return { total: clinicas.length, ativos, cortesias, semPlano, pagantes, mrr };
 }
 
@@ -599,7 +1189,7 @@ function escapeHtml(s) { return (s == null ? '' : String(s)).replace(/[&<>"]/g, 
 function dataBR(iso) { return iso ? new Date(iso).toLocaleDateString('pt-BR') : '—'; }
 
 /* ---------- RENDER ---------- */
-function renderTudo() { renderVisao(); renderClientes(); renderAssinaturas(); renderCustos(); }
+function renderTudo() { renderVisao(); renderClientes(); renderAssinaturas(); renderCustos(); renderCupons(); renderSites(); renderConfig(); }
 
 function renderVisao() {
   const m = metrics();
@@ -619,7 +1209,7 @@ function renderVisao() {
   const ativasSubs = DADOS.assinaturas.filter(s => s.status === 'ativa');
   document.getElementById('visao-planos').innerHTML = planos.map(p => {
     const subs = ativasSubs.filter(s => s.plano === p);
-    const total = subs.reduce((a, s) => a + Number(s.valor || 0), 0);
+    const total = subs.reduce((a, s) => a + mensalizar(s), 0);
     return `<div class="lista-item">
       <div class="lista-dot" style="background:${cores[p]}"></div>
       <div class="lista-label">${PLANO_LABEL[p]} <span class="lista-sub">· R$ ${PRECOS[p]}</span></div>
@@ -665,7 +1255,7 @@ function renderClientes(busca) {
       <td><div class="td-nome">${escapeHtml(c.nome || 'Sem nome')}</div><div class="td-sub">${escapeHtml(c.responsavel || '—')}${c.whatsapp ? ' · ' + escapeHtml(c.whatsapp) : ''}</div></td>
       <td>${planoPill(c.plano)}</td>
       <td><span class="pill pill-st-${st.key}">${st.label}</span>${c.cortesia && c.cortesia_expira_em ? `<div class="td-sub">expira ${dataBR(c.cortesia_expira_em)}</div>` : ''}</td>
-      <td><span class="pill pill-as-${asKey}">${asLabel}</span></td>
+      <td><span class="pill pill-as-${asKey}">${asLabel}</span>${u && u.periodo && u.periodo !== 'mensal' ? `<div class="td-sub">${PERIODO_LABEL[u.periodo]}</div>` : ''}</td>
       <td class="right">${rec ? brl(rec) : '<span class="muted">—</span>'}</td>
       <td class="right muted">${dataBR(c.criado_em)}</td>
     </tr>`;
