@@ -31,7 +31,7 @@ const DEFAULT_CUSTOS = {
     { id: "vercel", nome: "Vercel", ativo: false, modelo: "fixo", valor: 108, nota: "Hospedagem do front. Plano Pro ~ US$20/mes. Hoje no Hobby (gratis)." },
     { id: "mercadopago", nome: "Mercado Pago (taxas)", ativo: true, modelo: "percentual_receita", percentual: 4.98, nota: "Taxa de 4,98% sobre cada assinatura recebida." },
     { id: "digitalocean", nome: "Servidor Evolution / WhatsApp", ativo: true, modelo: "faixas_clinicas", faixas: [{ ate: 10, valor: 32 }, { ate: 25, valor: 65 }, { ate: 50, valor: 130 }, { ate: 100, valor: 259 }, { ate: null, valor: 518 }], nota: "DigitalOcean. A RAM cresce com o no de clinicas (US$6=1GB na 1a faixa). Ajuste as faixas conforme escalar." },
-    { id: "claude", nome: "API Claude / Anthropic", ativo: true, modelo: "uso_real_ia", preco_input_usd_milhao: 1.0, preco_output_usd_milhao: 5.0, cambio_brl: 5.40, nota: "Bot de WhatsApp em Haiku 4.5. Custo REAL com base nos tokens consumidos por cada clinica no mes (US$1/1M entrada, US$5/1M saida). Ajuste os precos e o cambio se mudarem." },
+    { id: "claude", nome: "API Claude / Anthropic", ativo: true, modelo: "uso_real_ia", preco_input_usd_milhao: 1.0, preco_output_usd_milhao: 5.0, preco_cache_escrita_usd_milhao: 1.25, preco_cache_leitura_usd_milhao: 0.10, cambio_brl: 5.40, nota: "Bot de WhatsApp em Haiku 4.5. Custo REAL com base nos tokens consumidos por cada clinica no mes. Os mesmos precos valem para a trava de custo do robo." },
   ],
 };
 
@@ -131,7 +131,11 @@ Deno.serve(async (req: Request) => {
       const [ano, mes] = ymd.split("-");
       const inicioMes = `${ano}-${mes}-01T00:00:00-03:00`;
 
-      const [clinicasRes, assinaturasRes, cfgRes, usoRes, cuponsRes, usosRes, sitesRes, cfgPubRes, cambioVivo] = await Promise.all([
+      // Trava de IA: histórico dos últimos 6 meses (1º dia do mês, 5 meses atrás).
+      const d6 = new Date(Date.UTC(Number(ano), Number(mes) - 1 - 5, 1));
+      const inicio6m = d6.toISOString().slice(0, 10);
+
+      const [clinicasRes, assinaturasRes, cfgRes, usoAggRes, cuponsRes, usosRes, sitesRes, cfgPubRes, cambioVivo, limitesRes, cotaRes, eventosRes] = await Promise.all([
         admin.from("clinicas")
           .select("id,nome,responsavel,whatsapp,email,plano,ativo,cortesia,cortesia_expira_em,criado_em,user_id")
           .order("criado_em", { ascending: false }),
@@ -139,22 +143,34 @@ Deno.serve(async (req: Request) => {
           .select("id,clinica_id,plano,periodo,status,valor,provedor,criado_em,proximo_pagamento,atualizado_em")
           .order("criado_em", { ascending: false }),
         admin.from("admin_config").select("value").eq("key", "custos").maybeSingle(),
-        admin.from("ia_uso")
-          .select("clinica_id,input_tokens,output_tokens,cache_creation_input_tokens,cache_read_input_tokens")
-          .gte("criado_em", inicioMes),
+        // Soma feita no banco (a API limita a 1.000 linhas; somar aqui subestimaria o custo).
+        admin.rpc("admin_ia_uso_mes", { p_inicio: inicioMes }),
         admin.from("cupons").select("*").order("criado_em", { ascending: false }),
         admin.from("cupom_usos").select("*").order("usado_em", { ascending: false }).limit(1000),
         admin.from("sites").select("*").order("criado_em", { ascending: false }),
         admin.from("config_publica").select("chave,valor"),
         cambioUSDBRL(),
+        admin.from("admin_config").select("value").eq("key", "ia_limites").maybeSingle(),
+        admin.from("ia_cota_mensal").select("*").gte("mes", inicio6m).order("mes", { ascending: false }),
+        admin.from("ia_cota_eventos").select("*").gte("mes", inicio6m).order("criado_em", { ascending: false }),
       ]);
+
+      // Fallback: se a RPC ainda não existir (migração não aplicada), lê as
+      // linhas como antes.
+      let usoRes: { data: any[] | null; error: any } = usoAggRes as any;
+      if (usoAggRes.error) {
+        usoRes = await admin.from("ia_uso")
+          .select("clinica_id,input_tokens,output_tokens,cache_creation_input_tokens,cache_read_input_tokens")
+          .gte("criado_em", inicioMes);
+      }
 
       // Agrega o uso de IA do mês por clínica. Se a tabela ainda não existir
       // (migração não aplicada), usoRes.error vem preenchido — devolvemos vazio.
-      const porClinica: Record<string, { clinica_id: string; input_tokens: number; output_tokens: number; cache_creation_input_tokens: number; cache_read_input_tokens: number }> = {};
+      const porClinica: Record<string, { clinica_id: string; chamadas: number; input_tokens: number; output_tokens: number; cache_creation_input_tokens: number; cache_read_input_tokens: number }> = {};
       for (const r of (usoRes.data || [])) {
         const k = r.clinica_id as string;
-        const acc = porClinica[k] || (porClinica[k] = { clinica_id: k, input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 });
+        const acc = porClinica[k] || (porClinica[k] = { clinica_id: k, chamadas: 0, input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 });
+        acc.chamadas += r.chamadas !== undefined ? Number(r.chamadas || 0) : 1;
         acc.input_tokens += Number(r.input_tokens || 0);
         acc.output_tokens += Number(r.output_tokens || 0);
         acc.cache_creation_input_tokens += Number(r.cache_creation_input_tokens || 0);
@@ -178,8 +194,39 @@ Deno.serve(async (req: Request) => {
           disponivel: !usoRes.error,
           clinicas: Object.values(porClinica),
         },
+        // Trava de IA: limites configurados + totais por clínica/mês + marcos atingidos.
+        ia_cota: {
+          disponivel: !cotaRes.error,
+          limites: limitesRes.data?.value || null,
+          meses: cotaRes.data || [],
+          eventos: eventosRes.data || [],
+        },
         cambio_vivo: cambioVivo,
       });
+    }
+
+    if (action === "salvar_ia_limites") {
+      // Valida e normaliza: número >= 0 ou null (sem limite). Nunca aceita lixo.
+      const l = body.limites;
+      if (!l || typeof l !== "object" || !l.planos || typeof l.planos !== "object") return json({ error: "limites_invalidos" }, 400);
+      const num = (v: unknown) => (v === "" || v === null || v === undefined) ? null : (isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : NaN);
+      const plano = (p: any, bloqueiaPadrao: boolean) => ({
+        bloqueia: p && typeof p.bloqueia === "boolean" ? p.bloqueia : bloqueiaPadrao,
+        conversas_mes: num(p?.conversas_mes),
+        teto_custo_brl: num(p?.teto_custo_brl),
+      });
+      const limpo = {
+        definicao: "conversa_dia",
+        limite_diario_telefone: num(l.limite_diario_telefone),
+        alertas_pct: [80, 100],
+        planos: { profissional: plano(l.planos.profissional, true), premium: plano(l.planos.premium, false) },
+      };
+      const todos = [limpo.limite_diario_telefone, limpo.planos.profissional.conversas_mes, limpo.planos.profissional.teto_custo_brl,
+        limpo.planos.premium.conversas_mes, limpo.planos.premium.teto_custo_brl];
+      if (todos.some((v) => typeof v === "number" && isNaN(v))) return json({ error: "valores_precisam_ser_numeros_positivos" }, 400);
+      const { error } = await admin.from("admin_config").upsert({ key: "ia_limites", value: limpo, updated_at: new Date().toISOString() });
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true, limites: limpo });
     }
 
     if (action === "cambio") {

@@ -107,6 +107,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
 .td-nome { font-weight: 500; }
 .td-sub { font-size: 11px; color: var(--cinza-medio); margin-top: 1px; }
 .right { text-align: right; }
+.tabela-ia th, .tabela-ia td { padding-left: 12px; padding-right: 12px; }
+.main { min-width: 0; } /* tabelas largas rolam dentro do card, não empurram a página */
+.tabela-ia td.right, .tabela-ia th.right { white-space: nowrap; }
 
 /* PILLS */
 .pill { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
@@ -269,6 +272,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
       <div class="nav-item" data-sec="custos" onclick="irPara('custos')">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 9v1m0-10c1.11 0 2.08.402 2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         Custos
+      </div>
+      <div class="nav-item" data-sec="ia" onclick="irPara('ia')">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 118 0v4M12 15v2"/></svg>
+        Trava de IA
       </div>
       <div class="nav-item" data-sec="config" onclick="irPara('config')">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 110-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 3.6 1.65 1.65 0 0010 2.09V2a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 8v0c.14.35.44.63.8.77H21a2 2 0 110 4h-.09c-.36.14-.66.42-.8.77z"/></svg>
@@ -473,6 +480,46 @@ body { font-family: 'DM Sans', sans-serif; background: var(--creme); color: var(
       </div>
     </section>
 
+    <!-- TRAVA DE IA (cota mensal por plano + limite diário + custo real por clínica) -->
+    <section id="sec-ia" class="sec">
+      <div class="topbar">
+        <div class="topbar-titulo"><h1>Trava de IA</h1><p>Quanto cada clínica usa e custa de IA no robô, e os limites que impedem o custo de passar da assinatura</p></div>
+        <select class="form-input" id="ia-mes" style="max-width:180px" onchange="renderIA()"></select>
+      </div>
+
+      <div class="metricas">
+        <div class="metrica-card laranja"><div class="metrica-label">Custo de IA no mês</div><div class="metrica-valor" id="ia-m-custo">—</div><span class="metrica-badge badge-laranja" id="ia-m-custo-sub">—</span></div>
+        <div class="metrica-card verde"><div class="metrica-label">Conversas de IA</div><div class="metrica-valor" id="ia-m-conversas">—</div><span class="metrica-badge badge-verde" id="ia-m-conversas-sub">paciente por dia</span></div>
+        <div class="metrica-card azul"><div class="metrica-label">Custo médio / conversa</div><div class="metrica-valor" id="ia-m-medio">—</div><span class="metrica-badge badge-azul" id="ia-m-medio-sub">—</span></div>
+        <div class="metrica-card roxo"><div class="metrica-label">Perto ou no limite</div><div class="metrica-valor" id="ia-m-alerta">—</div><span class="metrica-badge badge-roxo" id="ia-m-alerta-sub">≥ 80% da cota</span></div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-header"><div><div class="card-titulo">Custo real por clínica</div><div class="card-sub">Uso da cota = o maior entre % de conversas e % do teto de custo. Margem = receita do plano no mês − custo de IA.</div></div></div>
+        <div style="overflow-x:auto">
+          <table class="tabela tabela-ia">
+            <thead><tr>
+              <th style="min-width:150px">Clínica</th><th>Plano</th><th class="right">Conversas</th><th class="right">Msgs à IA</th><th style="min-width:170px">Uso da cota</th>
+              <th class="right">Custo IA</th><th class="right">Receita/mês</th><th class="right">Margem</th><th>Situação</th>
+            </tr></thead>
+            <tbody id="ia-tbody"><tr><td colspan="9"><div class="loading"><div class="loading-spinner"></div>Carregando...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2" style="grid-template-columns:1fr 1fr">
+        <div class="card">
+          <div class="card-header"><div><div class="card-titulo">Limites</div><div class="card-sub">1 conversa = 1 paciente que usou a IA num dia. Vazio = sem limite.</div></div>
+            <button class="btn btn-primario btn-mini" id="btn-salvar-ia" onclick="salvarLimitesIA()">Salvar</button></div>
+          <div class="card-body" id="ia-limites"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-titulo">Marcos do mês</div><div class="card-sub">80% e 100% avisam a clínica. "Teto Premium" só avisa você — o Premium nunca bloqueia.</div></div></div>
+          <div class="card-body" id="ia-eventos"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- CONFIGURAÇÕES (links de checkout + site) -->
     <section id="sec-config" class="sec">
       <div class="topbar">
@@ -558,7 +605,7 @@ const PLANO_LABEL = { basico: 'Básica', profissional: 'Profissional', premium: 
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
-let DADOS = { admin: null, clinicas: [], assinaturas: [], custos: null, uso_ia: { periodo: '', disponivel: false, clinicas: [] }, cambio_vivo: null, cupons: [], cupom_usos: [], sites: [], config_publica: {} };
+let DADOS = { admin: null, clinicas: [], assinaturas: [], custos: null, uso_ia: { periodo: '', disponivel: false, clinicas: [] }, ia_cota: { disponivel: false, limites: null, meses: [], eventos: [] }, cambio_vivo: null, cupons: [], cupom_usos: [], sites: [], config_publica: {} };
 let subsPorClinica = {};
 
 /* ---------- AUTH ---------- */
@@ -1097,6 +1144,7 @@ async function carregar() {
   DADOS = d;
   DADOS.custos = DADOS.custos || { moeda: 'BRL', ferramentas: [] };
   DADOS.uso_ia = DADOS.uso_ia || { periodo: '', disponivel: false, clinicas: [] };
+  DADOS.ia_cota = DADOS.ia_cota || { disponivel: false, limites: null, meses: [], eventos: [] };
   DADOS.cambio_vivo = DADOS.cambio_vivo || null;
   normalizarCustos();
   document.getElementById('sb-admin-nome').textContent = (d.admin && d.admin.nome) || 'Admin';
@@ -1139,6 +1187,8 @@ function normalizarCustos() {
   if (claude) {
     claude.preco_input_usd_milhao = claude.preco_input_usd_milhao ?? 1.0;
     claude.preco_output_usd_milhao = claude.preco_output_usd_milhao ?? 5.0;
+    claude.preco_cache_escrita_usd_milhao = claude.preco_cache_escrita_usd_milhao ?? 1.25;
+    claude.preco_cache_leitura_usd_milhao = claude.preco_cache_leitura_usd_milhao ?? 0.10;
     claude.cambio_brl = claude.cambio_brl ?? 5.40;
   }
 }
@@ -1218,14 +1268,18 @@ function cambioAtual(f) {
   if (cv && Number(cv.valor) > 0) return Number(cv.valor);
   return Number(f.cambio_brl ?? 5.40);
 }
-// Custo de uma clínica a partir do uso de tokens do mês.
+// Custo de uma clínica a partir do uso de tokens do mês. Cache tem preço
+// próprio: escrita custa 125% da entrada e leitura só 10% (Haiku 4.5).
 function custoIAcliente(u, f) {
   const pin = Number(f.preco_input_usd_milhao ?? 1);
   const pout = Number(f.preco_output_usd_milhao ?? 5);
+  const pcw = Number(f.preco_cache_escrita_usd_milhao ?? 1.25);
+  const pcr = Number(f.preco_cache_leitura_usd_milhao ?? 0.10);
   const cambio = cambioAtual(f);
-  const inTok = Number(u.input_tokens || 0) + Number(u.cache_creation_input_tokens || 0) + Number(u.cache_read_input_tokens || 0);
+  const cw = Number(u.cache_creation_input_tokens || 0), cr = Number(u.cache_read_input_tokens || 0);
+  const inTok = Number(u.input_tokens || 0) + cw + cr;
   const outTok = Number(u.output_tokens || 0);
-  const usd = (inTok / 1e6) * pin + (outTok / 1e6) * pout;
+  const usd = (Number(u.input_tokens || 0) * pin + cw * pcw + cr * pcr + outTok * pout) / 1e6;
   return { usd, brl: usd * cambio, inTok, outTok };
 }
 // Custo total da ferramenta Claude no mês (soma de todas as clínicas).
@@ -1248,7 +1302,7 @@ function escapeHtml(s) { return (s == null ? '' : String(s)).replace(/[&<>"]/g, 
 function dataBR(iso) { return iso ? new Date(iso).toLocaleDateString('pt-BR') : '—'; }
 
 /* ---------- RENDER ---------- */
-function renderTudo() { renderVisao(); renderClientes(); renderAssinaturas(); renderCustos(); renderCupons(); renderSites(); renderConfig(); }
+function renderTudo() { renderVisao(); renderClientes(); renderAssinaturas(); renderCustos(); renderIA(); renderCupons(); renderSites(); renderConfig(); }
 
 function renderVisao() {
   const m = metrics();
@@ -1381,6 +1435,8 @@ function renderCustos() {
       campos = `
         <div class="custo-campo"><label>US$ / 1M entrada</label><input class="form-input" type="number" step="0.01" value="${f.preco_input_usd_milhao ?? 1}" oninput="setCusto(${i},'preco_input_usd_milhao',this.value)"></div>
         <div class="custo-campo"><label>US$ / 1M saída</label><input class="form-input" type="number" step="0.01" value="${f.preco_output_usd_milhao ?? 5}" oninput="setCusto(${i},'preco_output_usd_milhao',this.value)"></div>
+        <div class="custo-campo"><label>US$ / 1M cache (escrita)</label><input class="form-input" type="number" step="0.01" value="${f.preco_cache_escrita_usd_milhao ?? 1.25}" oninput="setCusto(${i},'preco_cache_escrita_usd_milhao',this.value)"></div>
+        <div class="custo-campo"><label>US$ / 1M cache (leitura)</label><input class="form-input" type="number" step="0.01" value="${f.preco_cache_leitura_usd_milhao ?? 0.10}" oninput="setCusto(${i},'preco_cache_leitura_usd_milhao',this.value)"></div>
         ${cambioLinha}
         ${cambioFallback}
         ${breakdownIA(f)}`;
@@ -1437,8 +1493,177 @@ function breakdownIA(f) {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="custo-nota" style="margin-top:8px">Consumo de <strong>${escapeHtml(periodo)}</strong> (mês corrente). Tokens de cache, quando houver, entram como tokens de entrada.</p>
+    <p class="custo-nota" style="margin-top:8px">Consumo de <strong>${escapeHtml(periodo)}</strong> (mês corrente). A coluna de entrada inclui os tokens de cache, que entram no custo pelo preço próprio deles. Cota, limites e margem por clínica ficam em <a href="#" onclick="irPara('ia');return false">Trava de IA</a>.</p>
   </div>`;
+}
+
+/* ---------- TRAVA DE IA ---------- */
+// Limites padrão (os mesmos da migration) — usados só se a config ainda não existir.
+const IA_LIMITES_PADRAO = {
+  definicao: 'conversa_dia', limite_diario_telefone: 15, alertas_pct: [80, 100],
+  planos: {
+    profissional: { bloqueia: true, conversas_mes: 1500, teto_custo_brl: 70 },
+    premium: { bloqueia: false, conversas_mes: 6000, teto_custo_brl: 120 },
+  },
+};
+const MARCO_LABEL = { '80': '80% da cota', '100': 'Cota esgotada', premium_teto: 'Teto Premium' };
+
+function iaLimites() {
+  if (!DADOS.ia_cota.limites) DADOS.ia_cota.limites = JSON.parse(JSON.stringify(IA_LIMITES_PADRAO));
+  return DADOS.ia_cota.limites;
+}
+function iaClaude() { return (DADOS.custos.ferramentas || []).find(f => f.id === 'claude') || {}; }
+function iaMesAtual() { return ((DADOS.uso_ia && DADOS.uso_ia.periodo) || new Date().toISOString().slice(0, 7)) + '-01'; }
+function iaNomeMes(iso) {
+  const [y, m] = iso.split('-');
+  return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+}
+// Uso da cota = o maior entre % de conversas e % do teto de custo (mesma regra do banco).
+function iaUso(linha, plano, cambio) {
+  const cfg = (iaLimites().planos || {})[plano] || null;
+  const custoBrl = Number(linha.custo_usd || 0) * cambio;
+  if (!cfg) return { cfg: null, pct: 0, pctConv: 0, pctCusto: 0, custoBrl };
+  const pctConv = Number(cfg.conversas_mes) > 0 ? Number(linha.conversas || 0) * 100 / Number(cfg.conversas_mes) : 0;
+  const pctCusto = Number(cfg.teto_custo_brl) > 0 ? custoBrl * 100 / Number(cfg.teto_custo_brl) : 0;
+  return { cfg, pct: Math.max(pctConv, pctCusto), pctConv, pctCusto, custoBrl };
+}
+
+function renderIA() {
+  const tbody = document.getElementById('ia-tbody');
+  if (!tbody) return;
+  const cota = DADOS.ia_cota;
+  const atual = iaMesAtual();
+
+  // Seletor de mês (últimos 6 meses com dados + o mês corrente).
+  const sel = document.getElementById('ia-mes');
+  const meses = [...new Set([atual, ...(cota.meses || []).map(m => m.mes)])].sort().reverse();
+  const escolhido = sel.value && meses.includes(sel.value) ? sel.value : atual;
+  sel.innerHTML = meses.map(m => `<option value="${m}" ${m === escolhido ? 'selected' : ''}>${iaNomeMes(m)}${m === atual ? ' (atual)' : ''}</option>`).join('');
+
+  renderLimitesIA();
+
+  if (!cota.disponivel) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty">⏳ A trava de IA ainda não está ativa no banco (migration <code>trava_ia_cota</code> não aplicada).</div></td></tr>`;
+    document.getElementById('ia-eventos').innerHTML = '';
+    return;
+  }
+
+  const cambio = cambioAtual(iaClaude());
+  const doMes = {};
+  for (const m of (cota.meses || [])) if (m.mes === escolhido) doMes[m.clinica_id] = m;
+
+  // Mostra quem tem robô (Profissional/Premium ativas) + qualquer clínica com uso no mês.
+  const lista = DADOS.clinicas.filter(c => doMes[c.id] || (c.ativo && (c.plano === 'profissional' || c.plano === 'premium')));
+  const linhas = lista.map(c => {
+    const m = doMes[c.id] || { conversas: 0, chamadas: 0, custo_usd: 0, bloqueadas: 0, limite_diario: 0 };
+    const u = iaUso(m, c.plano, cambio);
+    const receita = receitaClinica(c);
+    return { c, m, u, receita, margem: receita - u.custoBrl };
+  }).sort((a, b) => b.u.custoBrl - a.u.custoBrl || b.u.pct - a.u.pct);
+
+  let totCusto = 0, totConv = 0, totCham = 0, perto = 0, esgotadas = 0;
+  for (const l of linhas) {
+    totCusto += l.u.custoBrl; totConv += Number(l.m.conversas || 0); totCham += Number(l.m.chamadas || 0);
+    if (l.u.cfg && l.u.cfg.bloqueia && l.u.pct >= 80) perto++;
+    if (l.u.cfg && l.u.cfg.bloqueia && l.u.pct >= 100) esgotadas++;
+  }
+  document.getElementById('ia-m-custo').textContent = brl2(totCusto);
+  document.getElementById('ia-m-custo-sub').textContent = `US$ ${(totCusto / cambio).toFixed(2)} · câmbio ${cambio.toFixed(2)}`;
+  document.getElementById('ia-m-conversas').textContent = totConv.toLocaleString('pt-BR');
+  document.getElementById('ia-m-conversas-sub').textContent = `${totCham.toLocaleString('pt-BR')} mensagens à IA`;
+  document.getElementById('ia-m-medio').textContent = totConv ? brl2(totCusto / totConv) : '—';
+  document.getElementById('ia-m-medio-sub').textContent = totConv ? `${(totCham / totConv).toFixed(1)} msgs por conversa` : 'sem uso ainda';
+  document.getElementById('ia-m-alerta').textContent = perto;
+  document.getElementById('ia-m-alerta-sub').textContent = esgotadas ? `${esgotadas} só no menu` : '≥ 80% da cota';
+
+  if (!linhas.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty">Nenhuma clínica com robô ativo neste mês.</div></td></tr>`;
+  } else {
+    tbody.innerHTML = linhas.map(l => {
+      const { c, m, u } = l;
+      let barra = '<span class="muted" style="font-size:12px">sem limite</span>';
+      if (u.cfg) {
+        const pct = Math.min(100, u.pct);
+        const cor = !u.cfg.bloqueia ? 'var(--roxo)' : u.pct >= 100 ? 'var(--vermelho)' : u.pct >= 80 ? 'var(--amarelo)' : 'var(--verde-medio)';
+        const detalhe = [
+          Number(u.cfg.conversas_mes) > 0 ? `${Number(m.conversas || 0).toLocaleString('pt-BR')}/${Number(u.cfg.conversas_mes).toLocaleString('pt-BR')} conv.` : '',
+          Number(u.cfg.teto_custo_brl) > 0 ? `${brl(u.custoBrl)}/${brl(u.cfg.teto_custo_brl)}` : '',
+        ].filter(Boolean).join(' · ');
+        barra = `<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:7px;border-radius:7px;background:var(--cinza-claro);overflow:hidden"><div style="width:${pct}%;height:100%;background:${cor}"></div></div><strong style="font-size:12px;min-width:38px;text-align:right">${Math.round(u.pct)}%</strong></div><div class="muted" style="font-size:11px;margin-top:3px">${detalhe}${u.cfg.bloqueia ? '' : ' · só alerta'}</div>`;
+      }
+      let sit = '<span class="pill pill-st-ativa">Normal</span>';
+      if (u.cfg && u.cfg.bloqueia && u.pct >= 100) sit = '<span class="pill pill-st-suspensa">Só menu</span>';
+      else if (u.cfg && u.cfg.bloqueia && u.pct >= 80) sit = '<span class="pill pill-as-pendente">Perto do limite</span>';
+      else if (u.cfg && !u.cfg.bloqueia && u.pct >= 100) sit = '<span class="pill pill-st-cortesia">Acima do teto</span>';
+      const extras = [
+        Number(m.bloqueadas) ? `${m.bloqueadas} msg${m.bloqueadas > 1 ? 's' : ''} só no menu` : '',
+        Number(m.limite_diario) ? `${m.limite_diario}× limite diário` : '',
+      ].filter(Boolean).join(' · ');
+      const receitaTxt = c.cortesia ? '<span class="muted">cortesia</span>' : brl2(l.receita);
+      return `<tr>
+        <td>${escapeHtml(c.nome || 'Sem nome')}</td>
+        <td>${planoPill(c.plano)}</td>
+        <td class="right">${Number(m.conversas || 0).toLocaleString('pt-BR')}</td>
+        <td class="right muted">${Number(m.chamadas || 0).toLocaleString('pt-BR')}</td>
+        <td>${barra}</td>
+        <td class="right" style="font-weight:600">${brl2(u.custoBrl)}<div class="muted" style="font-size:11px;font-weight:400">US$ ${Number(m.custo_usd || 0).toFixed(2)}</div></td>
+        <td class="right">${receitaTxt}</td>
+        <td class="right" style="font-weight:600;color:${l.margem < 0 ? 'var(--vermelho)' : 'var(--cinza-escuro)'}">${brl2(l.margem)}</td>
+        <td>${sit}${extras ? `<div class="muted" style="font-size:11px;margin-top:3px">${extras}</div>` : ''}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Marcos do mês escolhido
+  const nomePorId = {};
+  for (const c of DADOS.clinicas) nomePorId[c.id] = c.nome || 'Sem nome';
+  const evs = (cota.eventos || []).filter(e => e.mes === escolhido);
+  document.getElementById('ia-eventos').innerHTML = evs.length
+    ? evs.map(e => {
+        const d = e.detalhe || {};
+        return `<div class="lista-item" style="align-items:flex-start">
+          <div style="flex:1"><div style="font-weight:600;font-size:13px">${escapeHtml(nomePorId[e.clinica_id] || e.clinica_id)}</div>
+          <div class="muted" style="font-size:12px">${escapeHtml(MARCO_LABEL[e.marco] || e.marco)} · ${Number(d.conversas || 0).toLocaleString('pt-BR')} conversas · ${brl2(d.custo_brl)} · ${new Date(e.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div></div>
+        </div>`;
+      }).join('')
+    : '<p class="muted" style="font-size:13px">Nenhum marco atingido neste mês.</p>';
+}
+
+function renderLimitesIA() {
+  const el = document.getElementById('ia-limites');
+  if (!el || (document.activeElement && el.contains(document.activeElement))) return; // não rouba o foco
+  const l = iaLimites();
+  const v = x => (x === null || x === undefined) ? '' : x;
+  const campo = (rotulo, valor, onInput, passo = '1') =>
+    `<div class="custo-campo"><label style="min-width:170px">${rotulo}</label><input class="form-input" type="number" min="0" step="${passo}" value="${v(valor)}" placeholder="sem limite" oninput="${onInput}"></div>`;
+  el.innerHTML = `
+    <div class="form-label" style="margin-top:0">Todos os planos com robô</div>
+    ${campo('Mensagens à IA por telefone/dia', l.limite_diario_telefone, "setLimiteIA(null,'limite_diario_telefone',this.value)")}
+    <p class="custo-nota" style="margin:4px 0 14px">Passou disso no dia, um atendente assume e o robô pausa só para aquele telefone até amanhã.</p>
+    <div class="form-label">Profissional · bloqueia (vira só menu)</div>
+    ${campo('Conversas por mês', l.planos.profissional.conversas_mes, "setLimiteIA('profissional','conversas_mes',this.value)")}
+    ${campo('Teto de custo (R$/mês)', l.planos.profissional.teto_custo_brl, "setLimiteIA('profissional','teto_custo_brl',this.value)", '0.01')}
+    <p class="custo-nota" style="margin:4px 0 14px">O que vier primeiro. A clínica é avisada em 80% e 100%.</p>
+    <div class="form-label">Premium · ilimitado (só alerta você)</div>
+    ${campo('Alerta a partir de (conversas)', l.planos.premium.conversas_mes, "setLimiteIA('premium','conversas_mes',this.value)")}
+    ${campo('Alerta a partir de (R$/mês)', l.planos.premium.teto_custo_brl, "setLimiteIA('premium','teto_custo_brl',this.value)", '0.01')}`;
+}
+function setLimiteIA(plano, campo, valor) {
+  const l = iaLimites();
+  const n = valor === '' ? null : Number(valor);
+  if (plano) l.planos[plano][campo] = n; else l[campo] = n;
+}
+async function salvarLimitesIA() {
+  const btn = document.getElementById('btn-salvar-ia');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    const r = await api('salvar_ia_limites', { limites: iaLimites() });
+    DADOS.ia_cota.limites = r.limites;
+    toast('Limites da IA salvos ✓');
+    if (document.activeElement) document.activeElement.blur();
+    renderIA();
+  } catch (e) { toast('Erro ao salvar: ' + (e.message || e), true); }
+  btn.disabled = false; btn.textContent = 'Salvar';
 }
 
 /* ---------- HANDLERS CUSTOS ---------- */
